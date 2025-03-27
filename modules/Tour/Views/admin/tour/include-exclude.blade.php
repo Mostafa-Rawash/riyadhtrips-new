@@ -12,8 +12,11 @@
             @foreach($translation->include as $key=>$include)
                 <div class="item" data-number="{{$key}}">
                     <div class="row">
-                        <div class="col-md-11">
+                        <div class="col-md-5">
                             <input type="text" name="include[{{$key}}][title]" class="form-control" value="{{$include['title'] ?? ""}}" placeholder="{{__('Eg: Specialized bilingual guide')}}">
+                        </div>
+                        <div class="col-md-6">
+                            <input type="text" name="include[{{$key}}][description]" class="form-control" value="{{$include['description'] ?? ""}}" placeholder="{{__('Eg: Specialized bilingual guide description')}}">
                         </div>
                         <div class="col-md-1">
                                 <span class="btn btn-danger btn-sm btn-remove-item"><i class="fa fa-trash"></i></span>
@@ -29,8 +32,11 @@
     <div class="g-more hide">
         <div class="item" data-number="__number__">
             <div class="row">
-                <div class="col-md-11">
+                <div class="col-md-5">
                     <input type="text" __name__="include[__number__][title]" class="form-control" placeholder="{{__('Eg: Specialized bilingual guide')}}">
+                </div>
+                <div class="col-md-6">
+                    <input type="text" __name__="include[__number__][description]" class="form-control" placeholder="{{__('Eg: Specialized bilingual guide description')}}">
                 </div>
                 <div class="col-md-1">
                     <span class="btn btn-danger btn-sm btn-remove-item"><i class="fa fa-trash"></i></span>
@@ -53,8 +59,11 @@
             @foreach($translation->exclude as $key=>$exclude)
                 <div class="item" data-number="{{$key}}">
                     <div class="row">
-                        <div class="col-md-11">
+                        <div class="col-md-5">
                             <input type="text" name="exclude[{{$key}}][title]" class="form-control" value="{{$exclude['title'] ?? ""}}" placeholder="{{__('Eg: Specialized bilingual guide')}}">
+                        </div>
+                        <div class="col-md-6">
+                            <input type="text" name="exclude[{{$key}}][description]" class="form-control" value="{{$exclude['description'] ?? ""}}" placeholder="{{__('Eg: Specialized bilingual guide description')}}">
                         </div>
                         <div class="col-md-1">
                                 <span class="btn btn-danger btn-sm btn-remove-item"><i class="fa fa-trash"></i></span>
@@ -72,6 +81,9 @@
             <div class="row">
                 <div class="col-md-11">
                     <input type="text" __name__="exclude[__number__][title]" class="form-control" placeholder="{{__('Eg: Additional Services')}}">
+                </div>
+                <div class="col-md-11">
+                    <input type="text" __name__="exclude[__number__][description]" class="form-control" placeholder="{{__('Eg: Additional Services description')}}">
                 </div>
                 <div class="col-md-1">
                     <span class="btn btn-danger btn-sm btn-remove-item"><i class="fa fa-trash"></i></span>

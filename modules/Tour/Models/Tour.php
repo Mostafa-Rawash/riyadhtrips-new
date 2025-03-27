@@ -131,6 +131,10 @@ class Tour extends Bookable
 
         'itinerary',
 
+        'plans',
+
+        'places',
+
         'surrounding',
 
         'min_day_before_booking',
@@ -170,6 +174,10 @@ class Tour extends Bookable
         'exclude'   => 'array',
 
         'itinerary' => 'array',
+
+        'plans' => 'array',
+
+        'places' => 'array',
 
         'service_fee' => 'array',
 
@@ -2335,6 +2343,7 @@ class Tour extends Bookable
             $data['include'] = $this->include;
 
             $data['exclude'] = $this->exclude;
+            $data['plans'] = $this->plans;
 
             $data["itinerary"] = null;
 
