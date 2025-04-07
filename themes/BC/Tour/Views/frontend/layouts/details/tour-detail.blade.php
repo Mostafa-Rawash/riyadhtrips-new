@@ -98,7 +98,9 @@
     </div>
 </div>
 @endif
+@if  ($row->category_id  != 9)
 @include('Layout::global.details.gallery')
+@endif
 @if($translation->content)
     <div class="g-overview">
         <h3>{{__("Overview")}}</h3>
