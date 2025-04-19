@@ -98,7 +98,9 @@
     </div>
 </div>
 @endif
+@if  ($row->category_id  != 9)
 @include('Layout::global.details.gallery')
+@endif
 @if($translation->content)
     <div class="g-overview">
         <h3>{{__("Overview")}}</h3>
@@ -107,7 +109,13 @@
         </div>
     </div>
 @endif
-@include('Tour::frontend.layouts.details.tour-include-exclude')
+@if($row->category_id == 9)
+    @include('Tour::frontend.layouts.details.tour-places-to-visit')
+    @include('Tour::frontend.layouts.details.tour-plans-steps')
+    @include('Tour::frontend.layouts.details.tour-package-include-exclude')
+@elseif($row->category_id != 9)
+    @include('Tour::frontend.layouts.details.tour-include-exclude')
+@endif
 @include('Tour::frontend.layouts.details.tour-itinerary')
 @include('Tour::frontend.layouts.details.tour-attributes')
 @include('Tour::frontend.layouts.details.tour-faqs')
@@ -130,3 +138,285 @@
     </div>
 </div>
 @endif
+
+@if  ($row->category_id  == 9)
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<style>
+    /* ===== Base Styles ===== */
+:root {
+  --primary-color: #2fb38d;
+  --text-color: #333;
+  --text-light: #666;
+  --text-lighter: rgb(150, 150, 150);
+  --border-color: #dee2e6;
+  --hover-bg: #f8f9fa;
+  --active-bg: rgba(13, 110, 253, 0.05);
+}
+
+[class="fa"]:before, [class^=fa]:before {
+    font-family: 'FontAwesome';
+    font-weight: 400;
+}
+
+.g-include-exclude {
+  margin-bottom: 30px;
+}
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: var(--text-color);
+}
+/* ===== Tab Styles ===== */
+.nav-tabs {
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 0;
+}
+.nav-tabs .nav-item {
+  margin-bottom: -1px;
+}
+.nav-tabs .nav-link {
+  border: none;
+  padding: 0.5rem 1rem;
+  color: var(--text-lighter);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  font-weight: 600;
+}
+.nav-tabs .nav-link.active {
+  color: var(--text-color);
+  border-bottom: 4px solid var(--primary-color);
+  background-color: transparent;
+}
+.nav-tabs .nav-link:hover:not(.active) {
+  border-color: #e9ecef #e9ecef var(--border-color);
+  background-color: var(--hover-bg);
+}
+.tab-content {
+  padding: 0;
+  border: 0;
+  background-color: #fff;
+}
+.tab-pane {
+  padding: 20px 0;
+}
+/* ===== Accordion Styles ===== */
+.accordion {
+  border-radius: 0;
+  position: relative;
+}
+.accordion-item {
+  border-left: 0;
+  border-right: 0;
+  border-radius: 0 !important;
+  position: relative;
+  width: 86%;
+}
+.accordion-item:first-of-type {
+  border-top: 0;
+}
+.accordion-item:last-of-type {
+  border-bottom: 0;
+}
+.accordion-item::before {
+  content: "";
+  width: 2px;
+  height: -webkit-fill-available;
+  background-color: var(--primary-color);
+  position: absolute;
+}
+.accordion-parent {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  padding-left: 0;
+}
+.accordion-header {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: center;
+}
+.accordion-button {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-content: center;
+  background: transparent;
+  padding: 0;
+  font-weight: 500;
+  font-size: 1rem;
+  color: var(--text-color);
+  width: 100%;
+}
+.accordion-button:not(.collapsed) {
+  color: #0d6efd;
+  background-color: transparent;
+  box-shadow: none;
+}
+.accordion-button:focus {
+  box-shadow: none;
+  border-color: rgba(13, 110, 253, 0.25);
+}
+.accordion-button::after {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%232fb38d'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e") !important;
+  background-size: 12px;
+  width: 12px;
+  height: 12px;
+  color: var(--primary-color);
+}
+.step-day {
+  width: 10%;
+  margin: 0 15px 0 0 !important;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 15px 0;
+}
+.step-title {
+  flex: 1;
+  color: var(--primary-color);
+  padding: 15px 40px 10px 0;
+  width: 100%;
+  text-align: left;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  border: none;
+  font-size: 1rem;
+  padding-left: 30px;
+}
+.step-icon {
+  color: var(--primary-color);
+  background: white;
+  display: inline-block;
+  position: absolute;
+  border-radius: 50%;
+  border: 3px solid var(--primary-color);
+  left: -1%;
+  top: 16px;
+  width: 20px;
+  height: 20px;
+  z-index: 2;
+}
+button:not(.collapsed) .fa-circle::before {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50.5%, -45.8%);
+  left: 50%;
+  color: var(--primary-color);
+  font-size: 12px;
+}
+.accordion-body {
+  text-align: left;
+  color: var(--text-light);
+  font-size: 14px;
+  padding: 0 0 0 30px;
+  line-height: 1.6;
+}
+/* ===== Mobile Styles ===== */
+@media (max-width: 768px) {
+    .step-icon {
+        left: -3%;
+    }
+  .accordion-button {
+    /*padding: 12px;*/
+    font-size: 15px;
+  }
+  
+  .accordion-body {
+    padding: 12px 12px 12px 40px;
+  }
+}
+.fa-circle:before {
+    font-size: 0px;
+}
+button:not(.collapsed) .fa-circle:before {
+    font-size: 12px;
+}
+
+html:lang(ar) {
+  direction: rtl;
+  span.step-title {
+    text-align: right;
+    padding: 15px 0px 10px 40px;
+    padding-right: 30px;
+}
+.accordion-body {
+    text-align: right;
+    padding: 0px 30px 0px 0px;
+}
+.step-icon {
+    left: auto;
+    right: -1%;
+}
+@media (max-width: 768px) {
+    .step-icon {
+        right: -3%;
+    }
+}
+}
+
+
+ </style>   
+ 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (typeof bootstrap === 'undefined') {
+        setupManualTabs();
+        setupManualAccordions();
+    }
+});
+
+function setupManualTabs() {
+    const tabButtons = document.querySelectorAll(
+        '#includeTab button, #excludeTab button, #plansTab button'
+    );
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', e => {
+            e.preventDefault();
+            
+            // Toggle only the clicked tab
+            const isActive = button.classList.contains('active');
+            const targetId = button.getAttribute('data-bs-target');
+            
+            // Toggle button state
+            button.classList.toggle('active', !isActive);
+            button.setAttribute('aria-selected', !isActive);
+            
+            // Toggle associated pane
+            if (targetId) {
+                const targetPane = document.querySelector(targetId);
+                if (targetPane) {
+                    targetPane.classList.toggle('show', !isActive);
+                    targetPane.classList.toggle('active', !isActive);
+                }
+            }
+        });
+    });
+}
+
+function setupManualAccordions() {
+    const accordionButtons = document.querySelectorAll('.accordion-button');
+    
+    accordionButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-bs-target');
+            const targetPane = document.querySelector(targetId);
+            const isCollapsed = this.classList.contains('collapsed');
+            
+            // Toggle only this accordion
+            this.classList.toggle('collapsed', !isCollapsed);
+            this.setAttribute('aria-expanded', isCollapsed);
+            targetPane?.classList.toggle('show', isCollapsed);
+        });
+    });
+}
+</script>
+@endif
+

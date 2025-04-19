@@ -1238,7 +1238,6 @@ class BookingController extends \App\Http\Controllers\Controller
 
         $row->save();
 
-        event(new EnquirySendEvent($row));
 
         return $this->sendSuccess([
 

@@ -985,6 +985,7 @@ jQuery(function ($) {
 
         e.preventDefault();
         let form = $(this).closest('.enquiry_form_modal_form');
+        let modal = form.closest('.modal'); // Assuming the modal is a parent of the form
 
         $.ajax({
             url:bookingCore.url+'/booking/addEnquiry',
@@ -1012,9 +1013,14 @@ jQuery(function ($) {
                 }
 
                 form.find('.icon-loading').hide();
+console.log("res:", res); // ✅ Logs the full object structure
 
                 if(res.status){
                     form.find('textarea').val('');
+                    setTimeout(function() {
+                        modal.modal('hide'); // Close the modal
+                    }, 2000);
+
                 }
 
                 if(typeof BravoReCaptcha != "undefined"){

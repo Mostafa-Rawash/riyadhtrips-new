@@ -124,7 +124,8 @@
                                 <a href="#tab_status" class="list-group-item list-group-item-action " data-toggle="tab">{{__('Status')}}</a>
 
                                 <a href="#tab_seo" class="list-group-item list-group-item-action " data-toggle="tab">{{__('SEO')}}</a>
-
+                               
+                                <a href="#tab_steps" class="list-group-item list-group-item-action " data-toggle="tab">{{__('Steps')}}</a>
                             </div>
 
                         </div>
@@ -178,7 +179,14 @@
                                     @include('Core::admin/seo-meta/seo-meta')
 
                                 </div>
+                                
+                                
+                                <div class="tab-pane" id="tab_steps">
+                                @include('Tour::admin/tour/places-to-visit')
+                            @include('Tour::admin/tour/plans-steps')
 
+                            </div>
+                            
                                 <div class="tab-pane" id="tab_status">
 
                                     <div class="panel">

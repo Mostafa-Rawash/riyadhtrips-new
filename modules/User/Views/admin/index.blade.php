@@ -62,7 +62,7 @@
 
                         @foreach($roles as $role)
 
-                            <option value="{{$role->name}}" @if(Request()->role == $role->name) selected @endif >{{ucfirst($role->name)}}</option>
+                            <option value="{{$role->code}}" @if(Request()->role == $role->code) selected @endif >{{ucfirst($role->name)}}</option>
 
                         @endforeach
 
