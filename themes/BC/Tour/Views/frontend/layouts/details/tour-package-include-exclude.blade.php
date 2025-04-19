@@ -23,12 +23,12 @@ $title = __("Included/Excluded");
                             <span class="step-day"></span>
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="heading-include-{{ $loop->index }}">
-                                    <button class="accordion-button {{ !empty($item['description']) ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-include-{{ $loop->index }}" aria-expanded="{{ !empty($item['description']) ? 'true' : 'false' }}" aria-controls="collapse-include-{{ $loop->index }}">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-include-{{ $loop->index }}" aria-expanded="{{ !empty($item['description']) ? 'true' : 'false' }}" aria-controls="collapse-include-{{ $loop->index }}">
                                         <i class="fa fa-circle step-icon"></i>
                                         <span class="step-title">{{ $item['title'] }}</span>
                                     </button>
                                 </h2>
-                                <div id="collapse-include-{{ $loop->index }}" class="accordion-collapse collapse {{ !empty($item['description']) ? 'show' : '' }}" aria-labelledby="heading-include-{{ $loop->index }}" data-bs-parent="#accordion-include">
+                                <div id="collapse-include-{{ $loop->index }}" class="accordion-collapse collapse {{ !empty($item['description']) ? 'show' : '' }}" aria-labelledby="heading-include-{{ $loop->index }}">
                                     <div class="accordion-body">
                                         {{ $item['description'] ?? '' }}
                                     </div>
@@ -58,7 +58,7 @@ $title = __("Included/Excluded");
                                         <span class="step-title">{{ $item['title'] }}</span>
                                     </button>
                                 </h2>
-                                <div id="collapse-exclude-{{ $loop->index }}" class="accordion-collapse collapse {{ !empty($item['description']) ? 'show' : '' }}" aria-labelledby="heading-exclude-{{ $loop->index }}" data-bs-parent="#accordion-exclude">
+                                <div id="collapse-exclude-{{ $loop->index }}" class="accordion-collapse collapse {{ !empty($item['description']) ? 'show' : '' }}" aria-labelledby="heading-exclude-{{ $loop->index }}">
                                     <div class="accordion-body">
                                         {{ $item['description'] ?? '' }}
                                     </div>

@@ -10,7 +10,9 @@
         @if  ($row->category_id  == 9)
         @include('Layout::global.details.gallery')
         @endif
-        <!-- @include('Tour::frontend.layouts.details.tour-banner') -->
+        @if  ($row->category_id  != 9)
+        @include('Tour::frontend.layouts.details.tour-banner')
+        @endif
         <div class="bravo_content">
             <div class="container">
                 <div class="row">
@@ -24,7 +26,7 @@
                         @if  ($row->category_id  == 9)
                             @include('Tour::frontend.layouts.details.tour-package-form-book')
                         @elseif ($row->category_id  != 9)
-                        @include('Tour::frontend.layouts.details.tour-form-book')
+                            @include('Tour::frontend.layouts.details.tour-form-book')
                         @endif
                         @include('Tour::frontend.layouts.details.open-hours')
                     </div>
@@ -130,6 +132,7 @@
     <script type="text/javascript" src="{{ asset("libs/sticky/jquery.sticky.js") }}"></script>
     <script type="text/javascript" src="{{ asset('module/tour/js/single-tour.js?_ver='.config('app.asset_version')) }}"></script>
 @endpush
+
 @if  ($row->category_id  == 9)
 @push('css')
 <style>
@@ -168,7 +171,7 @@
     }
 
     .fotorama__stage__shaft {
-        height: 100% !important;
+        min-height: 100% !important;
     }
 
     .fotorama__nav--thumbs .fotorama__nav__frame,
@@ -186,9 +189,9 @@
         display: none;
     }
 
-    .fotorama__stage.fotorama__pointer {
-        max-height: 100%;
-    }
+    /*.fotorama__stage.fotorama__pointer {*/
+    /*    max-height: 100%;*/
+    /*}*/
 
     .fotorama__nav__shaft , .responsive-title{
         /* width: 100% !important; */
@@ -438,7 +441,7 @@
     width: 100%;    }
 
     .fotorama__stage {
-    height: 100%;
+    height: 100% !important;
 }
 
 .fotorama__stage__shaft {

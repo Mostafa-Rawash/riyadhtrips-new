@@ -110,13 +110,12 @@
     </div>
 @endif
 @if($row->category_id == 9)
-@include('Tour::frontend.layouts.details.tour-places-to-visit')
-@include('Tour::frontend.layouts.details.tour-plans-steps')
-@include('Tour::frontend.layouts.details.tour-package-include-exclude')
+    @include('Tour::frontend.layouts.details.tour-places-to-visit')
+    @include('Tour::frontend.layouts.details.tour-plans-steps')
+    @include('Tour::frontend.layouts.details.tour-package-include-exclude')
 @elseif($row->category_id != 9)
-@include('Tour::frontend.layouts.details.tour-include-exclude')
+    @include('Tour::frontend.layouts.details.tour-include-exclude')
 @endif
-
 @include('Tour::frontend.layouts.details.tour-itinerary')
 @include('Tour::frontend.layouts.details.tour-attributes')
 @include('Tour::frontend.layouts.details.tour-faqs')
@@ -157,27 +156,28 @@
   --active-bg: rgba(13, 110, 253, 0.05);
 }
 
+[class="fa"]:before, [class^=fa]:before {
+    font-family: 'FontAwesome';
+    font-weight: 400;
+}
+
 .g-include-exclude {
   margin-bottom: 30px;
 }
-
 .section-title {
   font-size: 20px;
   font-weight: 600;
   margin-bottom: 20px;
   color: var(--text-color);
 }
-
 /* ===== Tab Styles ===== */
 .nav-tabs {
   border-bottom: 1px solid var(--border-color);
   margin-bottom: 0;
 }
-
 .nav-tabs .nav-item {
   margin-bottom: -1px;
 }
-
 .nav-tabs .nav-link {
   border: none;
   padding: 0.5rem 1rem;
@@ -186,34 +186,28 @@
   cursor: pointer;
   font-weight: 600;
 }
-
 .nav-tabs .nav-link.active {
   color: var(--text-color);
   border-bottom: 4px solid var(--primary-color);
   background-color: transparent;
 }
-
 .nav-tabs .nav-link:hover:not(.active) {
   border-color: #e9ecef #e9ecef var(--border-color);
   background-color: var(--hover-bg);
 }
-
 .tab-content {
   padding: 0;
   border: 0;
   background-color: #fff;
 }
-
 .tab-pane {
   padding: 20px 0;
 }
-
 /* ===== Accordion Styles ===== */
 .accordion {
   border-radius: 0;
   position: relative;
 }
-
 .accordion-item {
   border-left: 0;
   border-right: 0;
@@ -221,15 +215,12 @@
   position: relative;
   width: 86%;
 }
-
 .accordion-item:first-of-type {
   border-top: 0;
 }
-
 .accordion-item:last-of-type {
   border-bottom: 0;
 }
-
 .accordion-item::before {
   content: "";
   width: 2px;
@@ -237,21 +228,18 @@
   background-color: var(--primary-color);
   position: absolute;
 }
-
 .accordion-parent {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
   padding-left: 0;
 }
-
 .accordion-header {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   align-content: center;
 }
-
 .accordion-button {
   display: flex;
   flex-direction: row;
@@ -264,18 +252,15 @@
   color: var(--text-color);
   width: 100%;
 }
-
 .accordion-button:not(.collapsed) {
   color: #0d6efd;
-  background-color: var(--active-bg);
+  background-color: transparent;
   box-shadow: none;
 }
-
 .accordion-button:focus {
   box-shadow: none;
   border-color: rgba(13, 110, 253, 0.25);
 }
-
 .accordion-button::after {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%232fb38d'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e") !important;
   background-size: 12px;
@@ -283,7 +268,6 @@
   height: 12px;
   color: var(--primary-color);
 }
-
 .step-day {
   width: 10%;
   margin: 0 15px 0 0 !important;
@@ -293,7 +277,6 @@
   text-transform: uppercase;
   padding: 15px 0;
 }
-
 .step-title {
   flex: 1;
   color: var(--primary-color);
@@ -307,7 +290,6 @@
   font-size: 1rem;
   padding-left: 30px;
 }
-
 .step-icon {
   color: var(--primary-color);
   background: white;
@@ -321,7 +303,6 @@
   height: 20px;
   z-index: 2;
 }
-
 button:not(.collapsed) .fa-circle::before {
   position: absolute;
   top: 50%;
@@ -330,7 +311,6 @@ button:not(.collapsed) .fa-circle::before {
   color: var(--primary-color);
   font-size: 12px;
 }
-
 .accordion-body {
   text-align: left;
   color: var(--text-light);
@@ -338,11 +318,13 @@ button:not(.collapsed) .fa-circle::before {
   padding: 0 0 0 30px;
   line-height: 1.6;
 }
-
 /* ===== Mobile Styles ===== */
 @media (max-width: 768px) {
+    .step-icon {
+        left: -3%;
+    }
   .accordion-button {
-    padding: 12px;
+    /*padding: 12px;*/
     font-size: 15px;
   }
   
@@ -350,96 +332,70 @@ button:not(.collapsed) .fa-circle::before {
     padding: 12px 12px 12px 40px;
   }
 }
-
 .fa-circle:before {
     font-size: 0px;
 }
 button:not(.collapsed) .fa-circle:before {
     font-size: 12px;
 }
+
+html:lang(ar) {
+  direction: rtl;
+  span.step-title {
+    text-align: right;
+    padding: 15px 0px 10px 40px;
+    padding-right: 30px;
+}
+.accordion-body {
+    text-align: right;
+    padding: 0px 30px 0px 0px;
+}
+.step-icon {
+    left: auto;
+    right: -1%;
+}
+@media (max-width: 768px) {
+    .step-icon {
+        right: -3%;
+    }
+}
+}
+
+
  </style>   
+ 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    try {
-        initializeComponents();
-    } catch (error) {
-        console.error("Error initializing components:", error);
-        setupFallbackComponents();
+    if (typeof bootstrap === 'undefined') {
+        setupManualTabs();
+        setupManualAccordions();
     }
 });
-
-function initializeComponents() {
-    // Use Bootstrap components if available
-    if (typeof bootstrap !== 'undefined') {
-        setupBootstrapTabs();
-        setupBootstrapAccordions();
-    } else {
-        setupFallbackComponents();
-    }
-}
-
-function setupBootstrapTabs() {
-    const tabElms = document.querySelectorAll('#includeTab button, #excludeTab button, #plansTab button');
-    
-    tabElms.forEach(tabEl => {
-        tabEl.addEventListener('click', event => {
-            event.preventDefault();
-            new bootstrap.Tab(tabEl).show();
-        });
-    });
-}
-
-function setupBootstrapAccordions() {
-    const accordionButtons = document.querySelectorAll('.accordion-button');
-    
-    accordionButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const target = document.querySelector(this.getAttribute('data-bs-target'));
-            const isCollapsed = this.classList.contains('collapsed');
-            
-            this.classList.toggle('collapsed', !isCollapsed);
-            this.setAttribute('aria-expanded', isCollapsed);
-            target.classList.toggle('show', isCollapsed);
-        });
-    });
-}
-
-function setupFallbackComponents() {
-    setupManualTabs();
-    setupManualAccordions();
-}
 
 function setupManualTabs() {
     const tabButtons = document.querySelectorAll(
         '#includeTab button, #excludeTab button, #plansTab button'
-    );
-    const tabPanes = document.querySelectorAll(
-        '#includeTabContent .tab-pane, #excludeTabContent .tab-pane, #plansTabContent .tab-pane'
     );
     
     tabButtons.forEach(button => {
         button.addEventListener('click', e => {
             e.preventDefault();
             
-            // Update all buttons
-            // tabButtons.forEach(btn => {
-            //     btn.classList.remove('active');
-            //     btn.setAttribute('aria-selected', 'false');
-            // });
+            // Toggle only the clicked tab
+            const isActive = button.classList.contains('active');
+            const targetId = button.getAttribute('data-bs-target');
             
-            // Update all panes
-            // tabPanes.forEach(pane => {
-            //     pane.classList.remove('show', 'active');
-            // });
+            // Toggle button state
+            button.classList.toggle('active', !isActive);
+            button.setAttribute('aria-selected', !isActive);
             
-            // Activate current tab
-            button.classList.add('active');
-            button.setAttribute('aria-selected', 'true');
-            
-            const targetId = button.getAttribute('data-bs-target')?.substring(1);
+            // Toggle associated pane
             if (targetId) {
-                const targetPane = document.getElementById(targetId);
-                targetPane?.classList.add('show', 'active');
+                const targetPane = document.querySelector(targetId);
+                if (targetPane) {
+                    targetPane.classList.toggle('show', !isActive);
+                    targetPane.classList.toggle('active', !isActive);
+                }
             }
         });
     });
@@ -454,12 +410,13 @@ function setupManualAccordions() {
             const targetPane = document.querySelector(targetId);
             const isCollapsed = this.classList.contains('collapsed');
             
+            // Toggle only this accordion
             this.classList.toggle('collapsed', !isCollapsed);
             this.setAttribute('aria-expanded', isCollapsed);
             targetPane?.classList.toggle('show', isCollapsed);
         });
     });
 }
-   
 </script>
 @endif
+

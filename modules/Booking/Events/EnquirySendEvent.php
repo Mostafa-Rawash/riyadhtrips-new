@@ -17,5 +17,6 @@ class EnquirySendEvent
     {
 
         $this->enquiry = $enquiry;
+        return $this;
     }
 }

@@ -4,34 +4,44 @@ $title = __("Places to Visit");
 }
 use Modules\Media\Helpers\FileHelper;
 @endphp
-@if (!empty($title))
+
+
+@if (!empty($translation->places))
 <div class="places-visit-section">
     <h3 class="section-title">{{ $title }}</h3>
 
-    <div id="placesCarousel" class="carousel slide carousel-custom" data-bs-ride="false">
+    <div id="placesCarousel" class="carousel slide carousel-custom" data-bs-ride="carousel">
         <div class="carousel-inner">
-            @php $chunks = array_chunk($translation->places, 2); @endphp
-            @foreach ($chunks as $index => $chunk)
-            <div class="carousel-item {{ $index == 0 ? 'active' : '' }}">
-                <div class="places-grid">
-                    @foreach ($chunk as $placeKey => $place)
-                    @if (is_array($place) && isset($place['title']) && $placeKey !== '__place_number__')
-                    <div class="place-card" data-bs-toggle="modal" data-bs-target="#placeModal{{ $loop->parent->index }}_{{ $loop->index }}">
-                        @if(!empty($place['image']))
-                        <div class="place-image-container">
-                            <img src="{{ FileHelper::url($place['image']) }}" alt="{{ $place['title'] }}" class="place-image">
-                            <div class="place-overlay">
-                                <h3 class="place-title">{{ $place['title'] }}</h3>
-                            </div>
+            @php $slideIndex = 0; @endphp
+            @foreach ($translation->places as $placeKey => $place)
+                @if ($loop->first || $loop->iteration % 2 == 1)
+                    <div class="carousel-item {{ $slideIndex === 0 ? 'active' : '' }}">
+                        <div class="row g-3 justify-content-center">
+                @endif
+
+                @if (is_array($place) && isset($place['title']) && $placeKey !== '__number__')
+                    <div class="col-12 col-md-6">
+                        <div class="place-card h-100" data-bs-toggle="modal" data-bs-target="#placeModal{{ $slideIndex }}_{{ $loop->iteration }}">
+                            @if(!empty($place['image']))
+                                <div class="place-image-container">
+                                    <img src="{{ FileHelper::url($place['image']) }}" alt="{{ $place['title'] }}" class="place-image img-fluid w-100">
+                                    <div class="place-overlay">
+                                        <h3 class="place-title">{{ $place['title'] }}</h3>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
-                        @endif
                     </div>
-                    @endif
-                    @endforeach
-                </div>
-            </div>
+                @endif
+
+                @if ($loop->iteration % 2 == 0 || $loop->last)
+                        </div>
+                    </div>
+                    @php $slideIndex++; @endphp
+                @endif
             @endforeach
         </div>
+
         <button class="carousel-control-prev" type="button" data-bs-target="#placesCarousel" data-bs-slide="prev">
             <span class="carousel-control-prev-icon" aria-hidden="true"></span>
             <span class="visually-hidden">Previous</span>
@@ -43,34 +53,35 @@ use Modules\Media\Helpers\FileHelper;
     </div>
 
     <!-- Modals for full-size images -->
-    @foreach ($chunks as $chunkIndex => $chunk)
-    @foreach ($chunk as $placeKey => $place)
-    @if (is_array($place) && isset($place['title']) && $placeKey !== '__place_number__' && !empty($place['image']))
-    <div class="modal fade" id="placeModal{{ $chunkIndex }}_{{ $loop->index }}" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog ">
-            <div class="modal-content">
-                <div class="modal-body p-0">
-                    <div class="modal-image-container">
-                        <img src="{{ FileHelper::url($place['image']) }}" alt="{{ $place['title'] }}" class="modal-image">
-                    </div>
-                    <div class="place-modal-info">
-                        <h3 class="place-modal-title">{{ $place['title'] }}</h3>
-
-                    </div>
-                    <div class="place-modal-footer">
-                        <div class="place-modal-close text-end">
-                            <button type="button" class="btn btn-link close-button" data-bs-dismiss="modal">Close</button>
+    @php $modalIndex = 0; @endphp
+    @foreach ($translation->places as $modalKey => $place)
+        @if (is_array($place) && isset($place['title']) && $modalKey !== '__place_number__' && !empty($place['image']))
+        <div class="modal fade" id="placeModal{{ floor($modalIndex / 2) }}_{{ $modalIndex + 1 }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog ">
+                <div class="modal-content">
+                    <div class="modal-body p-0">
+                        <div class="modal-image-container">
+                            <img src="{{ FileHelper::url($place['image']) }}" alt="{{ $place['title'] }}" class="modal-image">
+                        </div>
+                        <div class="place-modal-info">
+                            <h3 class="place-modal-title">{{ $place['title'] }}</h3>
+                        </div>
+                        <div class="place-modal-footer">
+                            <div class="place-modal-close text-end">
+                                <button type="button" class="btn btn-link close-button" data-bs-dismiss="modal">Close</button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    @endif
-    @endforeach
+        @endif
+        @php $modalIndex++; @endphp
     @endforeach
 </div>
 @endif
+
+
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -103,8 +114,8 @@ use Modules\Media\Helpers\FileHelper;
     .place-image-container {
         position: relative;
         width: 100%;
-        height: 0;
-        padding-bottom: 100%;
+        height: 100%;
+        /*padding-bottom: 100%;*/
         /* 1:1 aspect ratio (square) */
     }
 

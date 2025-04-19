@@ -57,8 +57,7 @@
                                                 </h2>
                                                 <div id="collapse-{{ $planKey }}-{{ $stepKey }}" 
                                                      class="accordion-collapse collapse" 
-                                                     aria-labelledby="heading-{{ $planKey }}-{{ $stepKey }}" 
-                                                     data-bs-parent="#accordion-plan-{{ $planKey }}">
+                                                     aria-labelledby="heading-{{ $planKey }}-{{ $stepKey }}">
                                                     <div class="accordion-body">
                                                         {{ $step['description'] }}
                                                         @if (!empty($step['image_url']))

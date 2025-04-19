@@ -45,4 +45,9 @@ $groups = \Modules\Core\Helpers\AdminMenuManager::groups_with_children();
         </li>
     @endforeach
     @endforeach
+        <li class="managers pos-111">
+        <a href="https://manager.riyadhtrips.com">
+            {!! clean("managers",['Attr.AllowedClasses'=>null]) !!}
+        </a>
+    </li>
 </ul>

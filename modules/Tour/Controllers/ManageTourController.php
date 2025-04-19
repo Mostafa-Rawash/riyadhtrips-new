@@ -214,7 +214,9 @@ class ManageTourController extends FrontendController
             'faqs',
             'include',
             'exclude',
-            'itinerary',
+            'itinerary',   
+            'plans',
+            'places',
             'enable_service_fee',
             'service_fee',
             'surrounding',
@@ -223,8 +225,6 @@ class ManageTourController extends FrontendController
             'start_date',
             'end_date',
             'last_booking_date',
-            'plans',
-            'places'
 
         ], $request->input());
 

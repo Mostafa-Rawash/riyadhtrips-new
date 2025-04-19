@@ -231,23 +231,49 @@ class Booking extends BaseModel
 
     }
 
+    // public function sendNewBookingEmails()
+    // {
+    //     try {
+    //         // To Admin
+    //         Mail::to(setting_item('admin_email'))->send(new NewBookingEmail($this, 'admin'));
+
+    //         // to Vendor
+    //         Mail::to(User::find($this->vendor_id))->send(new NewBookingEmail($this, 'vendor'));
+
+    //         // To Customer
+    //         Mail::to($this->email)->send(new NewBookingEmail($this, 'customer'));
+
+    //     }catch (\Exception | \Swift_TransportException $exception){
+
+    //         Log::warning('sendNewBookingEmails: '.$exception->getMessage());
+    //     }
+    // }
+    
     public function sendNewBookingEmails()
-    {
-        try {
-            // To Admin
-            Mail::to(setting_item('admin_email'))->send(new NewBookingEmail($this, 'admin'));
-
-            // to Vendor
-            Mail::to(User::find($this->vendor_id))->send(new NewBookingEmail($this, 'vendor'));
-
-            // To Customer
-            Mail::to($this->email)->send(new NewBookingEmail($this, 'customer'));
-
-        }catch (\Exception | \Swift_TransportException $exception){
-
-            Log::warning('sendNewBookingEmails: '.$exception->getMessage());
+{
+    try {
+        // To Admin
+        $adminEmail = setting_item('admin_email');
+        if (filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
+            Mail::to($adminEmail)->send(new NewBookingEmail($this, 'admin'));
         }
+
+        // To Vendor
+        $vendor = User::find($this->vendor_id);
+        if ($vendor && filter_var($vendor->email, FILTER_VALIDATE_EMAIL)) {
+            Mail::to($vendor->email)->send(new NewBookingEmail($this, 'vendor'));
+        }
+
+        // To Customer
+        if (!empty($this->email) && filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
+            Mail::to($this->email)->send(new NewBookingEmail($this, 'customer'));
+        }
+
+    } catch (\Exception | \Swift_TransportException $exception) {
+        Log::warning('sendNewBookingEmails: ' . $exception->getMessage());
     }
+}
+
 
     public function sendStatusUpdatedEmails(){
         // Try to update locale
