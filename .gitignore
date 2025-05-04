@@ -29,3 +29,7 @@ storage/bc.php
 storage/pro.php
 storage/installed
 public/themes/*/dist
+*.zip
+resources/GeoLite2-City_20210622
+uploads/*
+uploads/
