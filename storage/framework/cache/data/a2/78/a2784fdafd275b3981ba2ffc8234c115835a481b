@@ -1,0 +1,137 @@
+9999999999s:2932:"a.bravo-logo img {
+    width: 180px;
+}
+
+@media (min-width: 1400px) {
+    .container {
+        max-width: 1320px;
+    }
+}
+
+.bravo_wrap .page-template-content .bravo-call-to-action .context {
+    background: #2eb28d;
+}
+
+.bravo-text.ls-privacy-policy {
+    padding: 30px 0px;
+}
+
+.bravo_wrap .bravo-contact-block .contact-info .info-content {
+    background: #2eb28d;
+}
+
+.bravo_wrap .page-template-content .bravo-call-to-action.style_3 .context {
+        background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+}
+
+.bravo-call-to-action.style_3 {
+    margin: 0px!important;
+}
+
+.bravo_wrap .bravo_footer .main-footer .nav-footer .context ul li a {
+    margin-bottom: 10px;
+
+}
+
+.bravo_wrap .page-template-content .bravo-list-tour .title {
+    margin-top: 30px;
+}
+
+.bravo_wrap .page-template-content .bravo-offer .item a.btn-default {
+    position: unset;
+}
+
+.bravo_wrap .page-template-content .bravo-offer .item .item-sub-title {
+    display: none;
+}
+
+@media (min-width: 992px) {
+.bravo-offer .col-lg-3 {
+    flex: 0 0 50%;
+    max-width: 50%;
+}
+}
+
+.bravo_wrap .page-template-content .bravo-offer .item .item-title {
+    text-align: center;
+}
+
+.bravo_wrap .page-template-content .bravo-offer .item .img-cover::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.bravo_wrap .page-template-content .bravo-offer .item {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+}
+
+.bravo_wrap .page-template-content .bravo-offer .item a.btn-default {
+    background: #fff;
+    color: #000;
+}
+
+.field-address-line-1, .field-address-line-2, .field-city, .field-state, .field-zip-code {
+    display: none;
+}
+
+.whatsapp-button {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        font-size: 30px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: #25d366;
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-decoration: none;
+        box-shadow: 2px 2px 10px #888888;
+        transition: background-color 0.3s;
+        z-index: 999;
+    }
+
+    .whatsapp-button:hover {
+        background-color: #1ebe58;
+        text-decoration: none;
+        color: white;
+    }
+
+.service-review, .review-score {
+    display: none!important;
+}
+
+.srch_bx {
+    position: relative;
+}
+
+.srch_bx input {
+    width: 100%;
+    border: 1px solid #d7dce3;
+    border-radius: 5px;
+    font-size: 14px;
+    padding: 10px 20px;
+}
+
+.srch_bx span {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 10px;
+    font-size: 15px;
+}
+.iti.iti--allow-dropdown.iti--separate-dial-code {
+    width: 100%;
+}";
