@@ -3,93 +3,148 @@
 namespace Modules\Visa\Controllers;
 
 use App\Http\Controllers\Controller;
+use Modules\Visa\Models\VisaApplication;
 use Illuminate\Http\Request;
-use Modules\Visa\Models\Visa;
+use Illuminate\Support\Facades\Auth;
 
 class VisaController extends Controller
 {
-    protected $visaClass;
+    protected $visaApplicationModel;
 
-    public function __construct(Visa $visa)
+    public function __construct()
     {
-        $this->visaClass = $visa;
+        $this->visaApplicationModel = VisaApplication::class;
     }
 
-    public function callAction($method, $parameters)
+    // Customer dashboard visa history page
+    public function history(Request $request)
     {
-        if(setting_item('visa_disable'))
-        {
-            return redirect('/');
+        $user = Auth::user();
+        $query = VisaApplication::forUser($user->id);
+
+        // Apply filters
+        if ($request->has('status') && $request->status != '') {
+            $query->where('status', $request->status);
         }
-        return parent::callAction($method, $parameters);
+
+        if ($request->has('payment_status') && $request->payment_status != '') {
+            $query->where('payment_status', $request->payment_status);
+        }
+
+        if ($request->has('search') && $request->search != '') {
+            $query->where(function($q) use ($request) {
+                $q->where('unique_code', 'like', '%' . $request->search . '%')
+                  ->orWhere('visa_name', 'like', '%' . $request->search . '%')
+                  ->orWhere('country_name', 'like', '%' . $request->search . '%')
+                  ->orWhere('embassy_name', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        $visaApplications = $query->orderBy('created_at', 'desc')->paginate(10);
+        $summary = VisaApplication::getCustomerSummary($user->id);
+
+        $data = [
+            'visaApplications' => $visaApplications,
+            'summary' => $summary,
+            'page_title' => __('Visa History'),
+            'row' => $visaApplications
+        ];
+
+        return view('Visa::frontend.history', $data);
     }
 
-    public function index(Request $request)
+    // View single visa application details
+    public function show($id)
     {
-        $layout = setting_item("visa_layout_search", 'normal');
-        if ($request->query('_layout')) {
-            $layout = $request->query('_layout');
-        }
-        $is_ajax = $request->query('_ajax');
-
-        if(!empty($request->query('limit'))){
-            $limit = $request->query('limit');
-        }else{
-            $limit = !empty(setting_item("visa_page_limit_item"))? setting_item("visa_page_limit_item") : 9;
-        }
-        
-        $query = $this->visaClass->search($request->input());
-        $list = $query->paginate($limit);
+        $user = Auth::user();
+        $visa = VisaApplication::forUser($user->id)->where('id', $id)->firstOrFail();
 
         $data = [
-            'rows' => $list,
-            'layout' => $layout
+            'visa' => $visa,
+            'page_title' => __('Visa Application Details'),
         ];
-        
-        if ($is_ajax) {
-            return $this->sendSuccess([
-                'fragments' => [
-                    '.ajax-search-result' => view('Visa::frontend.ajax.search-result', $data)->render(),
-                    '.result-count' => $list->total() ? ($list->total() > 1 ? __(":count visas found",['count'=>$list->total()]) : __(":count visa found",['count'=>$list->total()])) : '',
-                    '.count-string' => $list->total() ? __("Showing :from - :to of :total Visas",["from"=>$list->firstItem(),"to"=>$list->lastItem(),"total"=>$list->total()]) : ''
-                ]
-            ]);
-        }
-        
-        $data = [
-            'rows' => $list,
-            "blank" => setting_item('search_open_tab') == "current_tab" ? 0 : 1,
-            "seo_meta" => [
-                'title' => __('Visa Applications'),
-                'description' => __('Your visa applications'),
-                'keywords' => __('visa,application'),
-            ],
-            'layout' => $layout
-        ];
-        
-        return view('Visa::frontend.search', $data);
-    }
 
-    public function detail(Request $request, $id)
-    {
-        $row = $this->visaClass::findOrFail($id);
-        
-        $data = [
-            'row' => $row,
-            'page_title' => __('Visa Application #:code', ['code' => $row->unique_code]),
-            'breadcrumbs' => [
-                [
-                    'name' => __('Visa Applications'),
-                    'url' => route('visa.search'),
-                ],
-                [
-                    'name' => __('Application #:code', ['code' => $row->unique_code]),
-                    'class' => 'active'
-                ]
-            ],
-            'body_class' => 'is_single'
-        ];
-        
         return view('Visa::frontend.detail', $data);
+    }
+
+    // Edit visa application
+    public function edit($id)
+    {
+        $user = Auth::user();
+        $visa = VisaApplication::forUser($user->id)->where('id', $id)->firstOrFail();
+
+        if (!$visa->canEdit()) {
+            return redirect()->route('visa.customer.history')
+                ->with('error', __('This visa application cannot be edited.'));
+        }
+
+        $data = [
+            'visa' => $visa,
+            'page_title' => __('Edit Visa Application'),
+        ];
+
+        return view('Visa::frontend.edit', $data);
+    }
+
+    // Update visa application
+    public function update(Request $request, $id)
+    {
+        $user = Auth::user();
+        $visa = VisaApplication::forUser($user->id)->where('id', $id)->firstOrFail();
+
+        if (!$visa->canEdit()) {
+            return redirect()->route('visa.customer.history')
+                ->with('error', __('This visa application cannot be edited.'));
+        }
+
+        $request->validate([
+            'first_name' => 'required|string|max:20',
+            'last_name' => 'required|string|max:20',
+            'email' => 'required|email|max:50',
+            'phone' => 'required|string',
+            'scheduled_trip_date' => 'required|date',
+            'adults' => 'required|integer|min:1',
+            'childrens' => 'integer|min:0',
+            'contact_type' => 'required|string',
+            'relationship' => 'required|string',
+        ]);
+
+        $visa->update($request->all());
+
+        return redirect()->route('visa.customer.detail', $id)
+            ->with('success', __('Visa application updated successfully.'));
+    }
+
+    // Cancel visa application
+    public function cancel($id)
+    {
+        $user = Auth::user();
+        $visa = VisaApplication::forUser($user->id)->where('id', $id)->firstOrFail();
+
+        if (!$visa->canCancel()) {
+            return redirect()->route('visa.customer.history')
+                ->with('error', __('This visa application cannot be cancelled.'));
+        }
+
+        $visa->update(['status' => 4]); // Cancelled status
+
+        return redirect()->route('visa.customer.history')
+            ->with('success', __('Visa application cancelled successfully.'));
+    }
+
+    // Dashboard widget
+    public function dashboardWidget()
+    {
+        $user = Auth::user();
+        $summary = VisaApplication::getCustomerSummary($user->id);
+        $recentVisas = VisaApplication::forUser($user->id)
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        return view('Visa::frontend.dashboard-widget', [
+            'summary' => $summary,
+            'recentVisas' => $recentVisas
+        ]);
     }
 }

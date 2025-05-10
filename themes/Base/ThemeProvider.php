@@ -32,6 +32,7 @@ class ThemeProvider extends AbstractThemeProvider
         'tour'      => \Modules\Tour\ModuleProvider::class,
         'flight'    => \Modules\Flight\ModuleProvider::class,
         'boat'      => \Modules\Boat\ModuleProvider::class,
+        'visa'      => \Modules\Visa\ModuleProvider::class,
         'contact'   => \Modules\Contact\ModuleProvider::class,
         'dashboard' => \Modules\Dashboard\ModuleProvider::class,
         'email'     => \Modules\Email\ModuleProvider::class,

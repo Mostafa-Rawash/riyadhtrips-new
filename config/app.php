@@ -412,6 +412,8 @@ return [
 
         App\Providers\RouteServiceProvider::class,
 
+        App\Providers\VisaServiceProvider::class, // Visa Service Provider
+
         Plugins\ServiceProvider::class,
 
         Custom\ServiceProvider::class,

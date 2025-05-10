@@ -1,3 +1,10 @@
-9999999999s:158:"<a href="https://wa.me/966562234171?text=Hello can i have more information" target="_blank" class="whatsapp-button">
+9999999999s:279:"<a href="https://wa.me/966920032086?text=Hello can i have more information" target="_blank" class="whatsapp-button">
     <i class="fa fa-whatsapp"></i>
-</a>";
+</a>
+<style>
+@media only screen and (max-width: 991px) {
+    .whatsapp-button {
+        bottom: 80px;
+    }
+}
+</style>";

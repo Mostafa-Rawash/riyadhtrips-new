@@ -2,141 +2,206 @@
 
 namespace Modules\Visa\Admin;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Modules\AdminController;
-use Modules\Visa\Models\Visa;
+use Modules\Visa\Models\VisaApplication;
+use Illuminate\Http\Request;
+use App\User;
 
 class VisaController extends AdminController
 {
-    protected $visaClass;
-
     public function __construct()
     {
-        $this->setActiveMenu(config('visa.admin_menu', 'visa'));
-        parent::__construct();
-        $this->visaClass = Visa::class;
+        // Don't call parent constructor as it may not exist
+        // Just set any initialization we need
     }
 
+    // List all visa applications
     public function index(Request $request)
     {
-        $this->checkPermission('visa_view');
-        $query = $this->visaClass::query();
-        
-        $query->orderBy('id', 'desc');
-        
-        if (!empty($request->s)) {
-            $query->where(function($query) use ($request) {
-                $query->where('first_name', 'LIKE', '%' . $request->s . '%')
-                    ->orWhere('last_name', 'LIKE', '%' . $request->s . '%')
-                    ->orWhere('email', 'LIKE', '%' . $request->s . '%')
-                    ->orWhere('unique_code', 'LIKE', '%' . $request->s . '%');
-            });
-        }
-        
-        if (!empty($request->status)) {
+        $this->checkPermission('visa_manage');
+
+        $query = VisaApplication::query();
+
+        // Apply filters
+        if ($request->has('status') && $request->status != '') {
             $query->where('status', $request->status);
         }
-        
-        if (!empty($request->country_id)) {
-            $query->where('country_name', $request->country_id);
-        }
-        
-        if (!empty($request->payment_status)) {
+
+        if ($request->has('payment_status') && $request->payment_status != '') {
             $query->where('payment_status', $request->payment_status);
         }
-        
+
+        if ($request->has('user_id') && $request->user_id != '') {
+            $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->has('search') && $request->search != '') {
+            $query->where(function($q) use ($request) {
+                $q->where('unique_code', 'like', '%' . $request->search . '%')
+                  ->orWhere('first_name', 'like', '%' . $request->search . '%')
+                  ->orWhere('last_name', 'like', '%' . $request->search . '%')
+                  ->orWhere('email', 'like', '%' . $request->search . '%')
+                  ->orWhere('visa_name', 'like', '%' . $request->search . '%')
+                  ->orWhere('country_name', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        $visaApplications = $query->orderBy('created_at', 'desc')->paginate(20);
+
         $data = [
-            'rows' => $query->paginate(20),
+            'rows' => $visaApplications,
             'page_title' => __('Visa Applications'),
-            'countries' => $this->getCountries(),
-            'statuses' => $this->getStatuses(),
-            'payment_statuses' => $this->getPaymentStatuses(),
+            'translation' => false,
         ];
-        
+
         return view('Visa::admin.index', $data);
     }
 
-    public function bulkEdit(Request $request)
+    // View single visa application details
+    public function show($id)
     {
-        $this->checkPermission('visa_update');
-        $ids = $request->input('ids');
-        $action = $request->input('action');
-        
-        if (empty($ids) || !is_array($ids)) {
-            return redirect()->back()->with('error', __('No items selected'));
-        }
-        
-        if (empty($action)) {
-            return redirect()->back()->with('error', __('Please select an action'));
-        }
-        
-        if ($action === 'delete') {
-            $this->checkPermission('visa_delete');
-            $this->visaClass::whereIn('id', $ids)->delete();
-        } else {
-            $this->visaClass::whereIn('id', $ids)->update(['status' => $action]);
-        }
-        
-        return redirect()->back()->with('success', __('Update success!'));
-    }
+        $this->checkPermission('visa_manage');
 
-    public function detail(Request $request, $id)
-    {
-        $this->checkPermission('visa_view');
-        $row = $this->visaClass::findOrFail($id);
-        
+        $visa = VisaApplication::findOrFail($id);
+
         $data = [
-            'row' => $row,
-            'page_title' => __('Visa Application: #:code', ['code' => $row->unique_code]),
-            'statuses' => $this->getStatuses(),
-            'payment_statuses' => $this->getPaymentStatuses(),
+            'visa' => $visa,
+            'page_title' => __('Visa Application Details'),
         ];
-        
+
         return view('Visa::admin.detail', $data);
     }
 
+    // Edit visa application
+    public function edit($id)
+    {
+        $this->checkPermission('visa_manage');
+
+        $visa = VisaApplication::findOrFail($id);
+        $users = User::orderBy('name')->get();
+
+        $data = [
+            'visa' => $visa,
+            'users' => $users,
+            'page_title' => __('Edit Visa Application'),
+        ];
+
+        return view('Visa::admin.edit', $data);
+    }
+
+    // Update visa application
     public function update(Request $request, $id)
     {
-        $this->checkPermission('visa_update');
-        $row = $this->visaClass::findOrFail($id);
-        
-        $row->status = $request->input('status');
-        $row->payment_status = $request->input('payment_status');
-        $row->notes = $request->input('notes');
-        $row->save();
-        
-        return redirect()->back()->with('success', __('Updated successfully'));
+        $this->checkPermission('visa_manage');
+
+        $visa = VisaApplication::findOrFail($id);
+
+        $request->validate([
+            'first_name' => 'required|string|max:20',
+            'last_name' => 'required|string|max:20',
+            'user_id' => 'required|exists:users,id',
+            'email' => 'required|email|max:50',
+            'phone' => 'required|string',
+            'scheduled_trip_date' => 'required|date',
+            'total_price' => 'required|numeric|min:0',
+            'adults' => 'required|integer|min:1',
+            'childrens' => 'integer|min:0',
+            'contact_type' => 'required|string',
+            'visa_name' => 'required|string',
+            'country_name' => 'required|string',
+            'embassy_name' => 'required|string',
+            'relationship' => 'required|string',
+            'payment_status' => 'required|string',
+            'payment_method' => 'required|string',
+            'status' => 'required|integer',
+            'response_message' => 'nullable|string',
+        ]);
+
+        $visa->update($request->all());
+
+        // If there's a response message, save it
+        if ($request->has('response_message') && $request->response_message) {
+            $visa->update(['appointment' => $request->response_message]);
+        }
+
+        // Notify customer if status changed
+        if ($request->has('notify_customer') && $request->notify_customer) {
+            // TODO: Implement email notification to customer
+        }
+
+        return redirect()->route('visa.admin.index')
+            ->with('success', __('Visa application updated successfully.'));
     }
 
-    private function getStatuses()
+    // Delete visa application
+    public function destroy($id)
     {
-        return [
-            0 => __('Pending'),
-            1 => __('Processing'),
-            2 => __('Approved'),
-            3 => __('Rejected'),
-            4 => __('Cancelled')
+        $this->checkPermission('visa_manage');
+
+        $visa = VisaApplication::findOrFail($id);
+        $visa->delete();
+
+        return redirect()->route('visa.admin.index')
+            ->with('success', __('Visa application deleted successfully.'));
+    }
+
+    // Bulk actions
+    public function bulkActions(Request $request)
+    {
+        $this->checkPermission('visa_manage');
+
+        $ids = $request->input('ids');
+        $action = $request->input('action');
+
+        if (empty($ids) || empty($action)) {
+            return redirect()->back()->with('error', __('Please select items and action'));
+        }
+
+        $visaApplications = VisaApplication::whereIn('id', $ids);
+
+        switch ($action) {
+            case 'delete':
+                $visaApplications->delete();
+                return redirect()->back()->with('success', __('Selected visa applications deleted successfully.'));
+
+            case 'approve':
+                $visaApplications->update(['status' => 2]);
+                return redirect()->back()->with('success', __('Selected visa applications approved successfully.'));
+
+            case 'reject':
+                $visaApplications->update(['status' => 3]);
+                return redirect()->back()->with('success', __('Selected visa applications rejected successfully.'));
+
+            default:
+                return redirect()->back()->with('error', __('Invalid action'));
+        }
+    }
+
+    // Get visa statistics
+    public function statistics()
+    {
+        $this->checkPermission('visa_manage');
+
+        $stats = [
+            'total' => VisaApplication::count(),
+            'pending' => VisaApplication::where('status', 0)->count(),
+            'processing' => VisaApplication::where('status', 1)->count(),
+            'approved' => VisaApplication::where('status', 2)->count(),
+            'rejected' => VisaApplication::where('status', 3)->count(),
+            'cancelled' => VisaApplication::where('status', 4)->count(),
+            'completed' => VisaApplication::where('status', 5)->count(),
+            'total_revenue' => VisaApplication::where('payment_status', 'paid')->sum('total_price'),
+            'pending_payment' => VisaApplication::where('payment_status', 'pending')->sum('total_price'),
         ];
-    }
 
-    private function getPaymentStatuses()
-    {
-        return [
-            'pending' => __('Pending'),
-            'paid' => __('Paid'),
-            'partial' => __('Partially Paid'),
-            'cancelled' => __('Cancelled')
+        $recentApplications = VisaApplication::orderBy('created_at', 'desc')->limit(10)->get();
+
+        $data = [
+            'stats' => $stats,
+            'recentApplications' => $recentApplications,
+            'page_title' => __('Visa Statistics'),
         ];
-    }
 
-    private function getCountries()
-    {
-        // In a real application, this would be more dynamic
-        // For now, we'll just get unique countries from the visa_submissions table
-        return $this->visaClass::select('country_name')
-            ->distinct()
-            ->pluck('country_name', 'country_name')
-            ->toArray();
+        return view('Visa::admin.statistics', $data);
     }
 }

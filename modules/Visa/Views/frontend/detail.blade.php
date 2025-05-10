@@ -1,184 +1,268 @@
-@extends('layouts.app')
+@extends('layouts.user')
+
 @section('head')
-    <link href="{{ asset('module/visa/css/visa.css?_ver='.config('app.asset_version')) }}" rel="stylesheet">
+    <link href="{{ asset('dist/frontend/module/user/css/user.css?_ver='.config('app.version')) }}" rel="stylesheet">
+    <style>
+        .visa-detail-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .detail-item {
+            margin-bottom: 15px;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        .detail-value {
+            font-size: 16px;
+            color: #212529;
+        }
+        .status-timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+        .timeline-item {
+            position: relative;
+            padding-left: 40px;
+            padding-bottom: 20px;
+        }
+        .timeline-item:before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #dee2e6;
+        }
+        .timeline-item:last-child:before {
+            bottom: 20px;
+        }
+        .timeline-dot {
+            position: absolute;
+            left: 0;
+            top: 8px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #6c757d;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 1px #dee2e6;
+        }
+        .timeline-dot.active {
+            background: #28a745;
+            box-shadow: 0 0 0 1px #28a745;
+        }
+    </style>
 @endsection
+
 @section('content')
-    <div class="bravo_detail_visa">
-        <div class="bravo_content">
-            <div class="container">
-                <div class="row">
-                    <div class="col-md-12 col-lg-9">
-                        <div class="g-header">
-                            <div class="left">
-                                <h1>{{__('Visa Application: #:code', ['code' => $row->unique_code])}}</h1>
-                            </div>
-                        </div>
-                        <div class="g-visa-detail">
-                            <div class="card">
-                                <div class="card-header">
-                                    {{__("Application Details")}}
+    <div class="bravo-user-profile">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-3">
+                    @include('User::frontend.layouts.sidebar')
+                </div>
+                <div class="col-md-9">
+                    <div class="user-content-wrapper">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h3>{{ __('Visa Application Details') }}</h3>
+                                    <div>
+                                        <a href="{{ route('visa.customer.history') }}" class="btn btn-secondary">
+                                            <i class="fa fa-arrow-left"></i> {{ __('Back to History') }}
+                                        </a>
+                                        @if($visa->canEdit())
+                                            <a href="{{ route('visa.customer.edit', $visa->id) }}" class="btn btn-primary">
+                                                <i class="fa fa-edit"></i> {{ __('Edit') }}
+                                            </a>
+                                        @endif
+                                    </div>
                                 </div>
-                                <div class="card-body">
+
+                                <!-- Basic Information -->
+                                <div class="visa-detail-section">
+                                    <h4 class="mb-3">{{ __('Basic Information') }}</h4>
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <div class="visa-info-item">
-                                                <div class="label">{{__("Full Name")}}</div>
-                                                <div class="value">{{$row->first_name}} {{$row->last_name}}</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">{{ __('Application Code') }}</div>
+                                                <div class="detail-value">#{{ $visa->unique_code }}</div>
                                             </div>
-                                            <div class="visa-info-item">
-                                                <div class="label">{{__("Email")}}</div>
-                                                <div class="value">{{$row->email}}</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">{{ __('Full Name') }}</div>
+                                                <div class="detail-value">{{ $visa->first_name }} {{ $visa->last_name }}</div>
                                             </div>
-                                            <div class="visa-info-item">
-                                                <div class="label">{{__("Phone")}}</div>
-                                                <div class="value">{{$row->phone}}</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">{{ __('Email') }}</div>
+                                                <div class="detail-value">{{ $visa->email }}</div>
                                             </div>
-                                            <div class="visa-info-item">
-                                                <div class="label">{{__("Contact Type")}}</div>
-                                                <div class="value">{{$row->contact_type}}</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">{{ __('Phone') }}</div>
+                                                <div class="detail-value">{{ $visa->phone }}</div>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
-                                            <div class="visa-info-item">
-                                                <div class="label">{{__("Country")}}</div>
-                                                <div class="value">{{$row->country_name}}</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">{{ __('Contact Type') }}</div>
+                                                <div class="detail-value">{{ $visa->contact_type }}</div>
                                             </div>
-                                            <div class="visa-info-item">
-                                                <div class="label">{{__("Visa Type")}}</div>
-                                                <div class="value">{{$row->visa_name}}</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">{{ __('Relationship') }}</div>
+                                                <div class="detail-value">{{ $visa->relationship }}</div>
                                             </div>
-                                            <div class="visa-info-item">
-                                                <div class="label">{{__("Embassy")}}</div>
-                                                <div class="value">{{$row->embassy_name}}</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">{{ __('Application Date') }}</div>
+                                                <div class="detail-value">{{ $visa->created_at->format('M d, Y H:i') }}</div>
                                             </div>
-                                            <div class="visa-info-item">
-                                                <div class="label">{{__("Status")}}</div>
-                                                <div class="value">
-                                                    <span class="badge badge-{{$row->status_class}}">{{$row->status_name}}</span>
+                                            <div class="detail-item">
+                                                <div class="detail-label">{{ __('Last Updated') }}</div>
+                                                <div class="detail-value">{{ $visa->updated_at->format('M d, Y H:i') }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Visa Details -->
+                                <div class="visa-detail-section">
+                                    <h4 class="mb-3">{{ __('Visa Details') }}</h4>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="detail-item">
+                                                <div class="detail-label">{{ __('Visa Type') }}</div>
+                                                <div class="detail-value">{{ $visa->visa_name }}</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">{{ __('Country') }}</div>
+                                                <div class="detail-value">{{ $visa->country_name }}</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">{{ __('Embassy') }}</div>
+                                                <div class="detail-value">{{ $visa->embassy_name }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="detail-item">
+                                                <div class="detail-label">{{ __('Scheduled Trip Date') }}</div>
+                                                <div class="detail-value">{{ $visa->scheduled_trip_date ? $visa->scheduled_trip_date->format('M d, Y') : '-' }}</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">{{ __('Travelers') }}</div>
+                                                <div class="detail-value">{{ $visa->adults }} adults, {{ $visa->childrens }} children</div>
+                                            </div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">{{ __('Total Price') }}</div>
+                                                <div class="detail-value">{{ $visa->formatted_price }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Payment Information -->
+                                <div class="visa-detail-section">
+                                    <h4 class="mb-3">{{ __('Payment Information') }}</h4>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="detail-item">
+                                                <div class="detail-label">{{ __('Payment Status') }}</div>
+                                                <div class="detail-value">
+                                                    <span class="badge badge-{{ $visa->payment_status_class }}">
+                                                        {{ ucfirst($visa->payment_status) }}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card mt-4">
-                                <div class="card-header">
-                                    {{__("Trip Details")}}
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">
                                         <div class="col-md-6">
-                                            <div class="visa-info-item">
-                                                <div class="label">{{__("Scheduled Trip Date")}}</div>
-                                                <div class="value">{{display_date($row->scheduled_trip_date)}}</div>
-                                            </div>
-                                            <div class="visa-info-item">
-                                                <div class="label">{{__("Adults")}}</div>
-                                                <div class="value">{{$row->adults}}</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="visa-info-item">
-                                                <div class="label">{{__("Children")}}</div>
-                                                <div class="value">{{$row->childrens}}</div>
-                                            </div>
-                                            <div class="visa-info-item">
-                                                <div class="label">{{__("Relationship")}}</div>
-                                                <div class="value">{{$row->relationship}}</div>
+                                            <div class="detail-item">
+                                                <div class="detail-label">{{ __('Payment Method') }}</div>
+                                                <div class="detail-value">{{ $visa->payment_method }}</div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="card mt-4">
-                                <div class="card-header">
-                                    {{__("Payment Information")}}
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="visa-info-item">
-                                                <div class="label">{{__("Total Price")}}</div>
-                                                <div class="value">{{format_money($row->total_price)}}</div>
-                                            </div>
-                                            <div class="visa-info-item">
-                                                <div class="label">{{__("Payment Method")}}</div>
-                                                <div class="value">{{$row->payment_method}}</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="visa-info-item">
-                                                <div class="label">{{__("Payment Status")}}</div>
-                                                <div class="value">{{$row->payment_status}}</div>
-                                            </div>
-                                            <div class="visa-info-item">
-                                                <div class="label">{{__("Application Date")}}</div>
-                                                <div class="value">{{display_date($row->created_at)}}</div>
+
+                                <!-- Application Status -->
+                                <div class="visa-detail-section">
+                                    <h4 class="mb-3">{{ __('Application Status') }}</h4>
+                                    <div class="current-status mb-4">
+                                        <span class="badge badge-{{ $visa->status_class }} badge-lg">
+                                            {{ $visa->status_name }}
+                                        </span>
+                                    </div>
+
+                                    <div class="status-timeline">
+                                        <div class="timeline-item">
+                                            <div class="timeline-dot {{ $visa->status >= 0 ? 'active' : '' }}"></div>
+                                            <div class="timeline-content">
+                                                <h6>{{ __('Application Submitted') }}</h6>
+                                                <small class="text-muted">{{ $visa->created_at->format('M d, Y H:i') }}</small>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-12 col-lg-3">
-                        <div class="g-sidebar">
-                            <div class="visa-status-box mb-4">
-                                <div class="status-header">
-                                    {{__("Application Status")}}
-                                </div>
-                                <div class="status-body">
-                                    <div class="current-status">
-                                        <span class="badge badge-{{$row->status_class}}">{{$row->status_name}}</span>
-                                    </div>
-                                    <div class="status-timeline mt-3">
-                                        <div class="timeline-item @if($row->status >= 0) active @endif">
-                                            <div class="timeline-point"></div>
-                                            <div class="timeline-info">{{__("Application Submitted")}}</div>
+                                        <div class="timeline-item">
+                                            <div class="timeline-dot {{ $visa->status >= 1 ? 'active' : '' }}"></div>
+                                            <div class="timeline-content">
+                                                <h6>{{ __('Under Processing') }}</h6>
+                                                <small class="text-muted">{{ $visa->status >= 1 ? $visa->updated_at->format('M d, Y H:i') : __('Pending') }}</small>
+                                            </div>
                                         </div>
-                                        <div class="timeline-item @if($row->status >= 1) active @endif">
-                                            <div class="timeline-point"></div>
-                                            <div class="timeline-info">{{__("Processing")}}</div>
+                                        <div class="timeline-item">
+                                            <div class="timeline-dot {{ $visa->status == 2 || $visa->status == 5 ? 'active' : '' }}"></div>
+                                            <div class="timeline-content">
+                                                <h6>{{ __('Approved/Completed') }}</h6>
+                                                <small class="text-muted">{{ ($visa->status == 2 || $visa->status == 5) ? $visa->updated_at->format('M d, Y H:i') : __('Pending') }}</small>
+                                            </div>
                                         </div>
-                                        <div class="timeline-item @if($row->status >= 2) active @endif">
-                                            <div class="timeline-point"></div>
-                                            <div class="timeline-info">{{__("Approved")}}</div>
-                                        </div>
+                                        @if($visa->status == 3)
+                                            <div class="timeline-item">
+                                                <div class="timeline-dot" style="background: #dc3545;"></div>
+                                                <div class="timeline-content">
+                                                    <h6>{{ __('Rejected') }}</h6>
+                                                    <small class="text-muted">{{ $visa->updated_at->format('M d, Y H:i') }}</small>
+                                                </div>
+                                            </div>
+                                        @endif
+                                        @if($visa->status == 4)
+                                            <div class="timeline-item">
+                                                <div class="timeline-dot" style="background: #6c757d;"></div>
+                                                <div class="timeline-content">
+                                                    <h6>{{ __('Cancelled') }}</h6>
+                                                    <small class="text-muted">{{ $visa->updated_at->format('M d, Y H:i') }}</small>
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
-                            </div>
-                            <div class="sidebar-widget">
-                                <div class="sidebar-title">
-                                    <h4>{{__("Payment Information")}}</h4>
-                                </div>
-                                <div class="sidebar-content">
-                                    <div class="info-item">
-                                        <div class="label">{{__("Total Price")}}</div>
-                                        <div class="value">{{format_money($row->total_price)}}</div>
-                                    </div>
-                                    <div class="info-item">
-                                        <div class="label">{{__("Payment Status")}}</div>
-                                        <div class="value">{{$row->payment_status}}</div>
-                                    </div>
-                                    <div class="info-item">
-                                        <div class="label">{{__("Payment Method")}}</div>
-                                        <div class="value">{{$row->payment_method}}</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="sidebar-widget">
-                                <div class="sidebar-title">
-                                    <h4>{{__("Need Help?")}}</h4>
-                                </div>
-                                <div class="sidebar-content">
-                                    <div class="contact-info">
-                                        <div class="info-item">
-                                            <i class="fa fa-phone"></i> {{__("Contact Support")}}: {{setting_item('site_phone')}}
-                                        </div>
-                                        <div class="info-item">
-                                            <i class="fa fa-envelope"></i> {{__("Email")}}: {{setting_item('site_email')}}
+
+                                <!-- Additional Information -->
+                                @if($visa->appointment)
+                                    <div class="visa-detail-section">
+                                        <h4 class="mb-3">{{ __('Notes/Response') }}</h4>
+                                        <div class="detail-value">
+                                            {!! nl2br(e($visa->appointment)) !!}
                                         </div>
                                     </div>
+                                @endif
+
+                                <!-- Actions -->
+                                <div class="text-center mt-4">
+                                    @if($visa->canCancel())
+                                        <form action="{{ route('visa.customer.cancel', $visa->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to cancel this visa application?') }}')">
+                                            @csrf
+                                            <button type="submit" class="btn btn-danger">
+                                                <i class="fa fa-times"></i> {{ __('Cancel Application') }}
+                                            </button>
+                                        </form>
+                                    @endif
+                                    @if($visa->payment_status != 'paid' && in_array($visa->status, [0, 1]))
+                                        <a href="#" class="btn btn-success">
+                                            <i class="fa fa-credit-card"></i> {{ __('Make Payment') }}
+                                        </a>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -190,5 +274,10 @@
 @endsection
 
 @section('footer')
-    <script type="text/javascript" src="{{ asset('module/visa/js/visa.js?_ver='.config('app.asset_version')) }}"></script>
+    <style>
+        .badge-lg {
+            padding: .5rem 1rem;
+            font-size: 1rem;
+        }
+    </style>
 @endsection
