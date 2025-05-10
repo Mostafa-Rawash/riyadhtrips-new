@@ -19,11 +19,6 @@
             <a href="{{ route("password.request") }}">{{__('Forgot Password?')}}</a>
         </div>
     </div>
-    @if(setting_item("user_enable_login_recaptcha"))
-        <div class="form-group">
-            {{recaptcha_field($captcha_action ?? 'login')}}
-        </div>
-    @endif
     <div class="error message-error invalid-feedback"></div>
     <div class="form-group">
         <button class="btn btn-primary form-submit" type="submit">

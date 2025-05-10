@@ -33,3 +33,5 @@ public/themes/*/dist
 resources/GeoLite2-City_20210622
 uploads/*
 uploads/
+resources/GeoLite2-City_20210622/GeoLite2-City.mmdb 
+*.mmdb 

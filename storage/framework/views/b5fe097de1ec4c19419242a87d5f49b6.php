@@ -19,12 +19,7 @@
             <a href="<?php echo e(route("password.request")); ?>"><?php echo e(__('Forgot Password?')); ?></a>
         </div>
     </div>
-    <?php if(setting_item("user_enable_login_recaptcha")): ?>
-        <div class="form-group">
-            <?php echo e(recaptcha_field($captcha_action ?? 'login')); ?>
 
-        </div>
-    <?php endif; ?>
     <div class="error message-error invalid-feedback"></div>
     <div class="form-group">
         <button class="btn btn-primary form-submit" type="submit">
