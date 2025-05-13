@@ -40,7 +40,7 @@ class ModuleProvider extends ModuleServiceProvider
             [
                 'url'    => route('visa.customer.history'),
                 'title'  => __('Visa History'),
-                'icon'   => 'icon-pricetag',
+                'icon'   => 'icofont-compass',
                 'position' => 40,
             ]
         ];

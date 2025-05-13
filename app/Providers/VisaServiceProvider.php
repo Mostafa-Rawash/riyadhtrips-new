@@ -22,7 +22,7 @@ class VisaServiceProvider extends ServiceProvider
                 'port' => env('DB_EXTERNAL_PORT', '3306'),
                 'database' => env('DB_EXTERNAL_DATABASE', 'riyaoeiu_subvisadom'),
                 'username' => env('DB_EXTERNAL_USERNAME', 'riyaoeiu_subvisadom'),
-                'password' => env('DB_EXTERNAL_PASSWORD', '4h[#Uln@G{ZS'),
+                'password' => env('DB_EXTERNAL_PASSWORD', 'nQ~YWEKH6g*3'),
                 'unix_socket' => env('DB_EXTERNAL_SOCKET', ''),
                 'charset' => 'utf8mb4',
                 'collation' => 'utf8mb4_unicode_ci',

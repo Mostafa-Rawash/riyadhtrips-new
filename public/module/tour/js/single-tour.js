@@ -92,12 +92,6 @@
 
             },
 
-            start_date() {
-
-                this.step = 1;
-
-            },
-
             guests() {
 
                 this.step = 1;
@@ -134,13 +128,13 @@
 
                         if (item.person_types != null) {
 
-                            me.person_types = Object.assign(
-
-                                [],
-
-                                item.person_types
-
-                            );
+                            // Clone the person types and format display prices
+                            me.person_types = item.person_types.map(function(pt) {
+                                return {
+                                    ...pt,
+                                    display_price: window.bravo_format_money ? window.bravo_format_money(pt.price) : '€' + pt.price
+                                };
+                            });
 
                         } else {
 
@@ -170,12 +164,6 @@
 
             },
 
-            start_date() {
-
-                this.step = 1;
-
-            },
-
         },
 
         computed: {
@@ -193,57 +181,59 @@
                     var total_guests = 0;
 
                     var startDate = new Date(me.start_date).getTime();
-
-                    // for person types
-
-                    if (me.person_types != null) {
-
-                        for (var ix in me.person_types) {
-
-                            var person_type = me.person_types[ix];
-
-                            total +=
-
-                                parseFloat(person_type.price) *
-
-                                parseInt(person_type.number);
-
-                            total_guests += parseInt(person_type.number);
-
+                    
+                    // Find the selected date event from allEvents
+                    var selectedEvent = null;
+                    for (var i = 0; i < me.allEvents.length; i++) {
+                        var event = me.allEvents[i];
+                        var eventDate = new Date(event.start).getTime();
+                        if (eventDate === startDate) {
+                            selectedEvent = event;
+                            break;
                         }
-
+                    }
+                    
+                    console.log("Selected event:", selectedEvent);
+                    
+                    // Use person types from the selected event if available
+                    if (selectedEvent && selectedEvent.person_types != null && selectedEvent.person_types.length > 0) {
+                        for (var ix in selectedEvent.person_types) {
+                            var person_type = selectedEvent.person_types[ix];
+                            // Get the price from the person type in the selected event
+                            var personPrice = parseFloat(person_type.price);
+                            // Get the number from me.person_types which has the updated guest counts
+                            var personNumber = 0;
+                            for (var jx in me.person_types) {
+                                if (me.person_types[jx].name === person_type.name) {
+                                    personNumber = parseInt(me.person_types[jx].number);
+                                    break;
+                                }
+                            }
+                            console.log("Person type:", person_type.name, "Price from event:", personPrice, "Number:", personNumber);
+                            total += personPrice * personNumber;
+                            total_guests += personNumber;
+                        }
+                    } else if (me.person_types != null && me.person_types.length > 0) {
+                        // Fallback to using me.person_types if selectedEvent not found
+                        for (var ix in me.person_types) {
+                            var person_type = me.person_types[ix];
+                            var personPrice = parseFloat(person_type.price);
+                            total += personPrice * parseInt(person_type.number);
+                            total_guests += parseInt(person_type.number);
+                        }
                     } else {
-
-                        // for default
-
+                        // for default when no person types are defined
                         total_guests = me.guests;
-
-                        total += me.guests * me.price;
-
+                        // Use price from selected event if available, otherwise use me.price
+                        var price = selectedEvent ? parseFloat(selectedEvent.price) : me.price;
+                        total += me.guests * price;
                     }
 
-                    if (me.packages != null) {
-
+                    if (me.packages != null && me.packages.length > 0) {
                         for (var ix in me.packages) {
-
                             var packages = me.packages[ix];
-
-                            total +=
-
-                                parseFloat(packages.price);
-
-                            // total_guests += parseInt(person_type.number);
-
+                            total += parseFloat(packages.price);
                         }
-
-                    } else {
-
-                        // for default
-
-                        // total_guests = me.guests;
-
-                        total += me.price;
-
                     }
 
 
@@ -740,6 +730,7 @@
                             drp.renderCalendar("right");
 
                         }
+                        console.log(json);
 
                         $(".daterangepicker").removeClass("loading");
 
@@ -1274,4 +1265,3 @@
     });
 
 })(jQuery);
-

@@ -1,0 +1,1 @@
+[2025-05-13 18:54:22] development.WARNING: sendNewBookingEmails: An email must have a "To", "Cc", or "Bcc" header.  
