@@ -4,6 +4,7 @@ namespace Modules\Visa\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class VisaApplication extends Model
 {
@@ -11,6 +12,9 @@ class VisaApplication extends Model
     protected $table = 'visa_application_summary';
     protected $primaryKey = 'id';
     public $timestamps = true;
+    
+    // Reference to the unique_code that can link to submissions table
+    protected $appends = ['submission_details'];
 
     protected $fillable = [
         'unique_code',
@@ -41,6 +45,32 @@ class VisaApplication extends Model
         'childrens' => 'integer',
         'status' => 'integer'
     ];
+
+    // Constructor with fallback connection logic
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        
+        try {
+            // Test the primary connection
+            DB::connection('visa_external')->getPdo();
+        } catch (\Exception $e) {
+            // If primary connection fails, log the error and try the fallback
+            Log::error("Failed to connect to visa_external database: " . $e->getMessage());
+            
+            try {
+                // Test the fallback connection
+                DB::connection('visa_fallback')->getPdo();
+                
+                // If fallback works, use it
+                $this->connection = 'visa_fallback';
+                Log::info("Using visa_fallback connection as fallback");
+            } catch (\Exception $e2) {
+                // Both connections failed
+                Log::error("Failed to connect to visa_fallback database: " . $e2->getMessage());
+            }
+        }
+    }
 
     // Relationship with the main user model
     public function user()
@@ -138,6 +168,21 @@ class VisaApplication extends Model
     public function canCancel()
     {
         return in_array($this->status, [0, 1]); // Pending or Processing
+    }
+    
+    // Get detailed submission data
+    public function getSubmissionDetailsAttribute()
+    {
+        return DB::connection($this->connection)
+            ->table('submissions')
+            ->where('unique_code', $this->unique_code)
+            ->first();
+    }
+    
+    // Define a relationship with multiple submissions in the submissions table
+    public function submissions()
+    {
+        return $this->hasMany(VisaSubmission::class, 'unique_code', 'unique_code');
     }
 
     // Get visa applications summary for dashboard

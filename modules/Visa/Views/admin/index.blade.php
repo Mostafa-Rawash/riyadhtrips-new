@@ -70,6 +70,7 @@
                                             <th>{{ __('Payment') }}</th>
                                             <th>{{ __('Status') }}</th>
                                             <th>{{ __('Created') }}</th>
+                                            <th>{{ __('Submissions') }}</th>
                                             <th>{{ __('Actions') }}</th>
                                         </tr>
                                     </thead>
@@ -115,13 +116,27 @@
                                                     </td>
                                                     <td>{{ $visa->created_at->format('M d, Y H:i') }}</td>
                                                     <td>
+                                                        <a href="{{ route('visa.admin.detail', $visa->id) }}" class="btn btn-sm btn-info">
+                                                            <i class="fa fa-file-alt"></i> {{ __('Details') }} 
+                                                            @if($visa->submissions_count > 1)
+                                                                <span class="badge badge-danger">{{ $visa->submissions_count }}</span>
+                                                            @endif
+                                                        </a>
+                                                    </td>
+                                                    <td>
                                                         <div class="dropdown">
                                                             <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="dropdownMenuButton{{ $visa->id }}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                                 {{ __('Actions') }}
                                                             </button>
                                                             <div class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ $visa->id }}">
-                                                                <a class="dropdown-item" href="{{ route('visa.admin.detail', $visa->id) }}">{{ __('View Details') }}</a>
-                                                                <a class="dropdown-item" href="{{ route('visa.admin.edit', $visa->id) }}">{{ __('Edit') }}</a>
+                                                            <a class="dropdown-item" href="{{ route('visa.admin.detail', $visa->id) }}">{{ __('View Details') }}</a>
+                                                            @if($visa->submissions_count > 0)
+                                                                <a class="dropdown-item" href="{{ route('visa.admin.submission_detail', $visa->id) }}">{{ __('View Submission') }}</a>
+                                                                        @if($visa->submissions_count > 1)
+                                                                            <a class="dropdown-item" href="{{ route('visa.admin.compare_submissions', $visa->id) }}">{{ __('Compare Submissions') }}</a>
+                                                                        @endif
+                                                                    @endif
+                                                                    <a class="dropdown-item" href="{{ route('visa.admin.edit', $visa->id) }}">{{ __('Edit') }}</a>
                                                                 <div class="dropdown-divider"></div>
                                                                 <form action="{{ route('visa.admin.delete', $visa->id) }}" method="POST" onsubmit="return confirm('{{ __('Are you sure you want to delete this visa application?') }}')">
                                                                     @csrf

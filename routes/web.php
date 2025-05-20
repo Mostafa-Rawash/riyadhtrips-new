@@ -22,6 +22,63 @@ Route::post('/install/check-db', 'HomeController@checkConnectDatabase');
 Route::get('social-login/{provider}', 'Auth\LoginController@socialLogin');
 Route::get('social-callback/{provider}', 'Auth\LoginController@socialCallBack');
 
+// Test route for visa database connection
+Route::get('/test-visa-db', function () {
+    try {
+        // Try connecting with visa_external
+        $externalResult = [];
+        try {
+            $externalTables = DB::connection('visa_external')->select('SHOW TABLES');
+            $externalCount = count($externalTables);
+            $externalResult = [
+                'success' => true,
+                'message' => "Connected to visa_external! Found {$externalCount} tables.",
+                'tables' => $externalTables
+            ];
+        } catch (\Exception $e) {
+            $externalResult = [
+                'success' => false,
+                'message' => "Error connecting to visa_external: " . $e->getMessage(),
+                'tables' => []
+            ];
+        }
+        
+        // Try connecting with visa_fallback
+        $fallbackResult = [];
+        try {
+            $fallbackTables = DB::connection('visa_fallback')->select('SHOW TABLES');
+            $fallbackCount = count($fallbackTables);
+            $fallbackResult = [
+                'success' => true,
+                'message' => "Connected to visa_fallback! Found {$fallbackCount} tables.",
+                'tables' => $fallbackTables
+            ];
+        } catch (\Exception $e) {
+            $fallbackResult = [
+                'success' => false,
+                'message' => "Error connecting to visa_fallback: " . $e->getMessage(),
+                'tables' => []
+            ];
+        }
+        
+        // Return results as JSON
+        return response()->json([
+            'external' => $externalResult,
+            'fallback' => $fallbackResult,
+            'env' => [
+                'DB_EXTERNAL_HOST' => env('DB_EXTERNAL_HOST'),
+                'DB_EXTERNAL_DATABASE' => env('DB_EXTERNAL_DATABASE'),
+                'DB_EXTERNAL_USERNAME' => env('DB_EXTERNAL_USERNAME'),
+                'DB_EXTERNAL_PASSWORD' => str_repeat('*', strlen(env('DB_EXTERNAL_PASSWORD')))
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Error: ' . $e->getMessage()
+        ], 500);
+    }
+});
+
 // Logs
 Route::get(config('admin.admin_route_prefix') . '/logs', '\Rap2hpoutre\LaravelLogViewer\LogViewerController@index')->middleware(['auth', 'dashboard', 'system_log_view'])->name('admin.logs');
 

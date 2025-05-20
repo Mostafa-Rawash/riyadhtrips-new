@@ -39,4 +39,5 @@ resources/GeoLite2-City_20210622/GeoLite2-City.mmdb
 resources/GeoLite2-City_20210622
 *.mmdb
 storage/debugbar/
-storage/framework/
+/storage
+storage/*

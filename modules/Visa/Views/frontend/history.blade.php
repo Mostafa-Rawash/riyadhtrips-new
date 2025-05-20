@@ -1,3 +1,4 @@
+```php
 @extends('layouts.user')
 
 @section('head')
@@ -19,6 +20,71 @@
         .visa-status-rejected { background: #f8d7da; color: #721c24; }
         .visa-status-cancelled { background: #e2e3e5; color: #383d41; }
         .visa-status-completed { background: #d4edda; color: #155724; }
+        
+        /* Enhanced table styles */
+        .submission-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+            border-radius: 0.25rem;
+            overflow: hidden;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        
+        .submission-table thead th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            padding: 0.75rem;
+            vertical-align: middle;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .submission-table tbody tr {
+            border-bottom: 1px solid #dee2e6;
+            transition: background-color 0.15s ease-in-out;
+        }
+        
+        .submission-table tbody tr:hover {
+            background-color: rgba(0, 123, 255, 0.04);
+            cursor: pointer;
+        }
+        
+        .submission-table tbody td {
+            padding: 0.75rem;
+            vertical-align: middle;
+        }
+        
+        .submission-table .visa-code {
+            font-weight: 600;
+            color: #007bff;
+        }
+        
+        .submission-table .visa-details {
+            max-width: 250px;
+        }
+        
+        .submission-table .visa-details .visa-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .submission-table .visa-details .visa-country,
+        .submission-table .visa-details .visa-embassy {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+        
+        .submission-table .action-buttons {
+            display: flex;
+            gap: 0.25rem;
+        }
+        
+        .submission-table .action-buttons .btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
     </style>
 @endsection
 
@@ -87,7 +153,7 @@
                             </div>
 
                             <!-- Filters -->
-                            <div class="booking-filter-box">
+                            <div class="booking-filter-box mb-4">
                                 <form action="{{ route('visa.customer.history') }}" method="GET" class="d-flex justify-content-between align-items-end">
                                     <div class="row">
                                         <div class="col-md-3">
@@ -123,39 +189,40 @@
                                 </form>
                             </div>
 
-                            <!-- Visa Applications Table -->
+                            <!-- Visa Applications Table (Enhanced Version) -->
                             <div class="booking-list">
                                 @if($visaApplications->count() > 0)
-                                    <div class="booking-list-manager table-responsive">
-                                        <table class="table table-striped table-hover">
-                                            <thead class="thead-light">
+                                    <div class="table-responsive">
+                                        <table class="submission-table">
+                                            <thead>
                                                 <tr>
-                                                    <th>{{ __('#Code') }}</th>
+                                                    <th>{{ __('Visa Code') }}</th>
                                                     <th>{{ __('Visa Details') }}</th>
                                                     <th>{{ __('Trip Date') }}</th>
                                                     <th>{{ __('Travelers') }}</th>
                                                     <th>{{ __('Price') }}</th>
                                                     <th>{{ __('Payment') }}</th>
                                                     <th>{{ __('Status') }}</th>
+                                                    <th>{{ __('Submissions') }}</th>
                                                     <th>{{ __('Actions') }}</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 @foreach($visaApplications as $visa)
-                                                    <tr>
-                                                        <td>#{{ $visa->unique_code }}</td>
-                                                        <td>
-                                                            <strong>{{ $visa->visa_name }}</strong><br>
-                                                            <small>{{ $visa->country_name }}</small><br>
-                                                            <small>{{ $visa->embassy_name }}</small>
+                                                    <tr class="visa-row" data-id="{{ $visa->id }}" onclick="window.location.href='{{ route('visa.customer.detail', $visa->id) }}'">
+                                                        <td class="visa-code">#{{ $visa->unique_code }}</td>
+                                                        <td class="visa-details">
+                                                            <div class="visa-name">{{ $visa->visa_name }}</div>
+                                                            <div class="visa-country">{{ $visa->country_name }}</div>
+                                                            <div class="visa-embassy">{{ $visa->embassy_name }}</div>
                                                         </td>
                                                         <td>
                                                             {{ $visa->scheduled_trip_date ? $visa->scheduled_trip_date->format('M d, Y') : '-' }}
                                                         </td>
                                                         <td>
-                                                            {{ $visa->adults }} adults
+                                                            {{ $visa->adults }} {{ __('adults') }}
                                                             @if($visa->childrens > 0)
-                                                                <br>{{ $visa->childrens }} children
+                                                                <br>{{ $visa->childrens }} {{ __('children') }}
                                                             @endif
                                                         </td>
                                                         <td>{{ $visa->formatted_price }}</td>
@@ -170,7 +237,12 @@
                                                             </span>
                                                         </td>
                                                         <td>
-                                                            <div class="btn-group" role="group">
+                                                            <span class="badge badge-info">
+                                                                {{ $visa->submissions_count ?? 0 }}
+                                                            </span>
+                                                        </td>
+                                                        <td onclick="event.stopPropagation()">
+                                                            <div class="action-buttons">
                                                                 <a href="{{ route('visa.customer.detail', $visa->id) }}" class="btn btn-xs btn-info" title="{{ __('View Details') }}">
                                                                     <i class="fa fa-eye"></i>
                                                                 </a>
@@ -210,4 +282,14 @@
 @endsection
 
 @section('footer')
+<script>
+    // Add JavaScript to make the entire row clickable except for action buttons
+    document.addEventListener('DOMContentLoaded', function() {
+        const visaRows = document.querySelectorAll('.visa-row');
+        visaRows.forEach(row => {
+            row.style.cursor = 'pointer';
+        });
+    });
+</script>
 @endsection
+```

@@ -64,10 +64,7 @@
     <div class="bravo-user-profile">
         <div class="container">
             <div class="row">
-                <div class="col-md-3">
-                    @include('User::frontend.layouts.sidebar')
-                </div>
-                <div class="col-md-9">
+                <div class="col-md-12">
                     <div class="user-content-wrapper">
                         <div class="row">
                             <div class="col-md-12">
@@ -84,6 +81,35 @@
                                         @endif
                                     </div>
                                 </div>
+
+                                <!-- Submissions Information (if multiple) -->
+                                @if(isset($submissions) && $submissions->count() > 1)
+                                    <div class="visa-detail-section">
+                                        <h4 class="mb-3">{{ __('Multiple Visa Submissions') }}</h4>
+                                        <div class="alert alert-info">
+                                            <i class="fa fa-info-circle"></i> {{ __('You have multiple visa submissions under this application.') }}
+                                        </div>
+                                        <div class="row">
+                                            @foreach($submissions as $submission)
+                                                <div class="col-md-6 mb-3">
+                                                    <div class="card">
+                                                        <div class="card-body">
+                                                            <h5 class="card-title">{{ $submission->visa_name }}</h5>
+                                                            <h6 class="card-subtitle mb-2 text-muted">{{ $submission->country_name }}</h6>
+                                                            <p class="card-text">
+                                                                <strong>{{ __('Scheduled Trip:') }}</strong> {{ $submission->scheduled_trip_date ?? 'Not specified' }}<br>
+                                                                <strong>{{ __('Travelers:') }}</strong> {{ $submission->adults ?? 0 }} adults, {{ $submission->childrens ?? 0 }} children
+                                                            </p>
+                                                            <a href="{{ route('visa.customer.submission', ['id' => $visa->id, 'submission_id' => $submission->id]) }}" class="btn btn-primary btn-sm">
+                                                                <i class="fa fa-eye"></i> {{ __('View Details') }}
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
 
                                 <!-- Basic Information -->
                                 <div class="visa-detail-section">
@@ -250,6 +276,12 @@
 
                                 <!-- Actions -->
                                 <div class="text-center mt-4">
+                                    <!-- View Full Submission Data Button -->
+                                    <a href="{{ route('visa.customer.submission', $visa->id) }}" class="btn btn-info btn-lg mb-3">
+                                        <i class="fa fa-file-alt"></i> {{ __('View Complete Application Details') }}
+                                    </a>
+                                    <div class="small text-muted mb-4">{{ __('Click above to see all submitted information and documents') }}</div>
+                                    
                                     @if($visa->canCancel())
                                         <form action="{{ route('visa.customer.cancel', $visa->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to cancel this visa application?') }}')">
                                             @csrf

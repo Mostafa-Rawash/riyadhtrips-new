@@ -67,8 +67,11 @@
                                         </td>
                                         <td>{{ $visa->created_at->format('M d, Y') }}</td>
                                         <td>
-                                            <a href="{{ route('visa.customer.detail', $visa->id) }}" class="btn btn-xs btn-outline-primary">
+                                            <a href="{{ route('visa.customer.detail', $visa->id) }}" class="btn btn-xs btn-outline-primary" title="{{ __('View Summary') }}">
                                                 <i class="fa fa-eye"></i>
+                                            </a>
+                                            <a href="{{ route('visa.customer.submission', $visa->id) }}" class="btn btn-xs btn-outline-info" title="{{ __('View Full Application') }}">
+                                                <i class="fa fa-file-alt"></i>
                                             </a>
                                         </td>
                                     </tr>

@@ -4,8 +4,10 @@ namespace Modules\Visa\Admin;
 
 use Modules\AdminController;
 use Modules\Visa\Models\VisaApplication;
+use Modules\Visa\Models\VisaSubmission;
 use Illuminate\Http\Request;
 use App\User;
+use Illuminate\Support\Facades\DB;
 
 class VisaController extends AdminController
 {
@@ -48,6 +50,11 @@ class VisaController extends AdminController
 
         $visaApplications = $query->orderBy('created_at', 'desc')->paginate(20);
 
+        // For each visa application, get the count of submissions
+        foreach ($visaApplications as $visa) {
+            $visa->submissions_count = VisaSubmission::where('unique_code', $visa->unique_code)->count();
+        }
+
         $data = [
             'rows' => $visaApplications,
             'page_title' => __('Visa Applications'),
@@ -63,13 +70,95 @@ class VisaController extends AdminController
         $this->checkPermission('visa_manage');
 
         $visa = VisaApplication::findOrFail($id);
+        $submissionsQuery = VisaSubmission::where('unique_code', $visa->unique_code);
+        
+        // Apply filter if provided
+        if (request()->has('submission_filter') && !empty(request('submission_filter'))) {
+            $submissionsQuery->where('visa_name', request('submission_filter'));
+        }
+        
+        $submissions = $submissionsQuery->get();
 
         $data = [
             'visa' => $visa,
+            'submissions' => $submissions,
             'page_title' => __('Visa Application Details'),
         ];
 
         return view('Visa::admin.detail', $data);
+    }
+    
+    // View detailed submission data
+    public function showSubmission($id)
+    {
+        $this->checkPermission('visa_manage');
+
+        $visa = VisaApplication::findOrFail($id);
+        $submissions = VisaSubmission::where('unique_code', $visa->unique_code)->get();
+        
+        if ($submissions->isEmpty()) {
+            return redirect()->route('visa.admin.detail', $id)
+                ->with('error', __('Detailed submission data not found.'));
+        }
+        
+        // If submission_id is provided in the request, use that specific submission
+        $submissionId = request('submission_id');
+        if ($submissionId) {
+            $submission = $submissions->firstWhere('id', $submissionId);
+            if (!$submission) {
+                return redirect()->route('visa.admin.detail', $id)
+                    ->with('error', __('The specified submission was not found.'));
+            }
+        } else {
+            // Default to the first submission
+            $submission = $submissions->first();
+        }
+
+        $data = [
+            'visa' => $visa,
+            'submission' => $submission,
+            'submissions' => $submissions,
+            'page_title' => __('Visa Submission Details'),
+        ];
+
+        return view('Visa::admin.submission_detail', $data);
+    }
+    
+    // Compare multiple submissions
+    public function compareSubmissions($id)
+    {
+        $this->checkPermission('visa_manage');
+
+        $visa = VisaApplication::findOrFail($id);
+        $submissions = VisaSubmission::where('unique_code', $visa->unique_code)->get();
+
+        if ($submissions->count() < 2) {
+            return redirect()->route('visa.admin.detail', $id)
+                ->with('error', __('There must be at least two submissions to compare.'));
+        }
+
+        $data = [
+            'visa' => $visa,
+            'submissions' => $submissions,
+            'page_title' => __('Compare Visa Submissions'),
+        ];
+
+        // If submission IDs are provided, load them for comparison
+        if (request()->has('submission1') && request()->has('submission2')) {
+            $submission1 = VisaSubmission::findOrFail(request('submission1'));
+            $submission2 = VisaSubmission::findOrFail(request('submission2'));
+            
+            // Ensure both submissions belong to this visa application
+            if ($submission1->unique_code != $visa->unique_code || $submission2->unique_code != $visa->unique_code) {
+                return redirect()->route('visa.admin.compare_submissions', $id)
+                    ->with('error', __('Invalid submission selection. Submissions must belong to this visa application.'));
+            }
+            
+            $data['submission1'] = $submission1;
+            $data['submission2'] = $submission2;
+        }
+
+        return view('Visa::admin.compare_submissions', $data);
     }
 
     // Edit visa application
