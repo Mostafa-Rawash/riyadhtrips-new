@@ -342,28 +342,24 @@
                                 <!-- Checkbox and Package Name -->
                                 <div class="flex-grow-1">
                                     <label>
-                                        <input type="radio" name="package" value="0" v-model="type.enable"> 
+                                        <input type="checkbox" true-value="1" false-value="0" v-model="type.enable"> 
                                         @{{ type.name }}
                                     </label>
+                                    <div class="render check-in-render" v-if="type.description">@{{ type.description }}</div>
                                     <div class="render" v-if="type.price">(@{{ type.display_price }})</div>
                                 </div>
                     
-                                <!-- Start Times as Radio Buttons -->
-                                <div class="flex-shrink-0">
-                                    <div v-if="type.start_times && type.start_times.length">
-                                        <div v-for="(time, timeIndex) in type.start_times" :key="timeIndex">
-                                            <label>
-                                                <input 
-                                                    type="radio" 
-                                                    :name="'start_time_' + index" 
-                                                    :value="time" 
-                                                    v-model="type.selected_time"> 
-                                                @{{ time }}
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div v-else>
-                                        {{ __('No start times available') }}
+                                <!-- Start Times as Radio Buttons (if needed) -->
+                                <div class="flex-shrink-0" v-if="type.start_times && type.start_times.length">
+                                    <div v-for="(time, timeIndex) in type.start_times" :key="timeIndex">
+                                        <label>
+                                            <input 
+                                                type="radio" 
+                                                :name="'start_time_' + index" 
+                                                :value="time" 
+                                                v-model="type.selected_time"> 
+                                            @{{ time }}
+                                        </label>
                                     </div>
                                 </div>
                             </div>

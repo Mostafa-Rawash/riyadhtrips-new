@@ -229,10 +229,15 @@
                         total += me.guests * price;
                     }
 
+                    // Add package prices if selected
                     if (me.packages != null && me.packages.length > 0) {
                         for (var ix in me.packages) {
                             var packages = me.packages[ix];
-                            total += parseFloat(packages.price);
+                            // Only add price if package is selected (enable property is true or 1)
+                            if (packages.enable == 1 || packages.enable === true) {
+                                total += parseFloat(packages.price);
+                                console.log("Package selected:", packages.name, "Price:", packages.price);
+                            }
                         }
                     }
 
