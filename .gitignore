@@ -41,3 +41,13 @@ resources/GeoLite2-City_20210622
 storage/debugbar/
 /storage
 storage/*
+TIME_SLOTS_IMPLEMENTATION_SUMMARY.md.removed
+tour_time_slots_guide.md.removed
+create_time_slots_tables.php.removed
+setup_tour_time_slots.php.removed
+tour_time_slots.sql.removed
+#storage/framework/cache/data/*
+#storage/framework/cache/data/
+tour-availability-analysis.md
+tour-availability-analysis-arabic.md
+setup_time_slots_db.php
