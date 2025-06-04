@@ -877,8 +877,6 @@ class Tour extends Bookable
 
     public function beforeCheckout(Request $request, $booking)
     {
-        \Log::debug(message: 'Start beforeCheckout ' . __NAMESPACE__ . " JSON " . json_encode($booking));
-
         // 🔥 CRITICAL: Enhanced pre-checkout validation with real-time capacity check
         
         // Check if booking has a time slot
@@ -921,38 +919,26 @@ class Tour extends Bookable
                 ]));
             }
         }
-        \Log::debug(message: 'End beforeCheckout ' . __NAMESPACE__ . " JSON " . json_encode($maxGuests));
-
         return true;
     }
 
     public function getNumberAvailableBooking($start_date)
-    {
-        // 🔥 CRITICAL: Enhanced availability calculation with proper date filtering
-        
-        $tourDate = $this->tourDateClass::where('target_id', $this->id)
-            ->where('start_date', '<=', $start_date)
-            ->where('end_date', '>=', $start_date)
-            ->where('active', 1)
-            ->first();
 
-        // 🔥 CRITICAL: Count confirmed bookings only (exclude draft and cancelled)
-        $totalGuests = $this->bookingClass::where('object_id', $this->id)
-            ->whereDate('start_date', $start_date)
-            ->whereNotIn('status', ['cancelled', 'rejected', 'draft', 'expired'])
-            ->sum('total_guests') ?? 0;
+    {
+
+        $tourDate = $this->tourDateClass::where('target_id', $this->id)->where('start_date', $start_date)->where('active', 1)->first();
+
+        $totalGuests = $this->bookingClass::where('object_id', $this->id)->where('start_date', $start_date)->whereNotIn('status', $this->bookingClass::$notAcceptedStatus)->sum('total_guests');
 
         $maxGuests = !empty($tourDate->max_guests) ? $tourDate->max_guests : $this->max_people;
-        
-        // Ensure we have a valid max guests number
-        if (!$maxGuests || $maxGuests <= 0) {
-            $maxGuests = $this->max_people ?? 0;
-        }
 
-        $available = $maxGuests - $totalGuests;
+        $number = $maxGuests - $totalGuests;
 
-        return $available > 0 ? $available : 0;
+        return $number > 0 ? $number : 0;
+
     }
+
+
  
     /**
      * Get time slots for a specific day of week (1=Monday, 7=Sunday)
