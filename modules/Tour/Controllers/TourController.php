@@ -53,9 +53,6 @@
             $this->attributesClass = $attributes;
 
             $this->locationCategoryClass = $location_category;
-            
-                \Log::debug('Controller loaded from: ' . __NAMESPACE__);
-
 
         }
 

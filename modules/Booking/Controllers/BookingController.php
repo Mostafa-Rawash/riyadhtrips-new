@@ -148,7 +148,7 @@ class BookingController extends \App\Http\Controllers\Controller
          *      * @var $booking Booking
          *      * @var $user User
          *      */
-            $res = $this->validateDoCheckout();
+        $res = $this->validateDoCheckout();
         if ($res !== true) return $res;
         $user = auth()->user();
         $booking = $this->bookingInst;
