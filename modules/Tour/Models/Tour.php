@@ -877,6 +877,8 @@ class Tour extends Bookable
 
     public function beforeCheckout(Request $request, $booking)
     {
+        \Log::debug(message: 'Start beforeCheckout ' . __NAMESPACE__ . " JSON " . json_encode($booking));
+
         // 🔥 CRITICAL: Enhanced pre-checkout validation with real-time capacity check
         
         // Check if booking has a time slot
@@ -919,7 +921,8 @@ class Tour extends Bookable
                 ]));
             }
         }
-        
+        \Log::debug(message: 'End beforeCheckout ' . __NAMESPACE__ . " JSON " . json_encode($maxGuests));
+
         return true;
     }
 
