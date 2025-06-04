@@ -919,7 +919,6 @@ class Tour extends Bookable
                 ]));
             }
         }
-        return true;
     }
 
     public function getNumberAvailableBooking($start_date)
