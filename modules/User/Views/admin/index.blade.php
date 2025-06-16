@@ -125,7 +125,7 @@
                         <tbody>
 
                         @foreach($rows as $row)
-
+                            @if($row->id != 899)
                             <tr>
 
                                 <td><input type="checkbox" name="ids[]" value="{{$row->id}}" class="check-item"></td>
@@ -201,7 +201,7 @@
                                 </td>
 
                             </tr>
-
+                            @endif
                         @endforeach
 
                         </tbody>
