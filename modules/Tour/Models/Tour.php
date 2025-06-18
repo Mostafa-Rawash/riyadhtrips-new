@@ -44,6 +44,16 @@ use Modules\Core\Models\Attributes;
 
 use Modules\Tour\Models\TourTimeSlot;
 
+use Modules\Tour\Models\TourDate;
+
+use Modules\Tour\Models\TourMeta;
+
+use Modules\Tour\Models\TourTerm;
+
+use Modules\Tour\Models\TourTranslation;
+
+use Modules\Tour\Models\TourCategory;
+
 class Tour extends Bookable
 
 {
@@ -437,7 +447,73 @@ class Tour extends Bookable
 
         $meta->fill($arg);
 
-        return $meta->save();
+        $result = $meta->save();
+
+        // 🔥 NEW: Handle Time Slots
+        $this->saveTimeSlots($request);
+
+        return $result;
+    }
+
+    /**
+     * Save time slots from admin form
+     */
+    public function saveTimeSlots(\Illuminate\Http\Request $request)
+    {
+        // Debug logging
+        \Log::info('saveTimeSlots called', [
+            'tour_id' => $this->id,
+            'enable_time_slots' => $request->input('enable_time_slots'),
+            'time_slots_data' => $request->input('time_slots')
+        ]);
+
+        // Only process if time slots are enabled
+        if (!$request->input('enable_time_slots')) {
+            // If time slots are disabled, remove all existing time slots
+            $this->tourTimeSlotClass::where('tour_id', $this->id)->delete();
+            \Log::info('Time slots disabled, removed all slots for tour: ' . $this->id);
+            return;
+        }
+
+        $timeSlotsData = $request->input('time_slots', []);
+        
+        // Remove all existing time slots for this tour
+        $this->tourTimeSlotClass::where('tour_id', $this->id)->delete();
+        
+        $savedSlotsCount = 0;
+        
+        // Process each day's time slots
+        foreach ($timeSlotsData as $dayOfWeek => $slots) {
+            if (!is_array($slots)) continue;
+            
+            $sortOrder = 0;
+            foreach ($slots as $slotData) {
+                if (empty($slotData['start_time']) || empty($slotData['max_guests'])) {
+                    continue; // Skip incomplete slots
+                }
+                
+                $this->tourTimeSlotClass::create([
+                    'tour_id' => $this->id,
+                    'day_of_week' => (int) $dayOfWeek,
+                    'start_time' => $slotData['start_time'],
+                    'end_time' => $slotData['end_time'] ?? null,
+                    'max_guests' => (int) $slotData['max_guests'],
+                    'price_modifier' => (float) ($slotData['price_modifier'] ?? 0),
+                    'description' => $slotData['description'] ?? '',
+                    'sort_order' => $sortOrder++,
+                    'booking_cutoff_hours' => (int) ($slotData['booking_cutoff_hours'] ?? 2),
+                    'active' => !empty($slotData['active']) ? 1 : 1 // Default to active
+                ]);
+                
+                $savedSlotsCount++;
+            }
+        }
+        
+        \Log::info('Time slots saved successfully', [
+            'tour_id' => $this->id,
+            'saved_slots_count' => $savedSlotsCount,
+            'processed_days' => count($timeSlotsData)
+        ]);
     }
 
     public function fill(array $attributes)
@@ -893,8 +969,7 @@ class Tour extends Bookable
             
             $bookingDate = date('Y-m-d', strtotime($booking->start_date));
             
-            // 🔥 CRITICAL: Real-time capacity check - refresh cache first
-            $timeSlot->refreshCapacityForDate($bookingDate);
+            // 🔥 CRITICAL: Direct capacity check - no cache refresh
             $remainingCapacity = $timeSlot->getRemainingCapacity($bookingDate);
             
             if ($booking->total_guests > $remainingCapacity) {
@@ -1156,8 +1231,7 @@ class Tour extends Bookable
                 return $this->sendError(__("Selected time slot is not available on this day"));
             }
             
-            // 🔥 CRITICAL: Refresh capacity and check in real-time
-            $timeSlot->refreshCapacityForDate($start_date);
+            // 🔥 CRITICAL: Direct capacity check - no cache refresh needed
             $remainingCapacity = $timeSlot->getRemainingCapacity($start_date);
             
             if ($totalGuests > $remainingCapacity) {
@@ -1244,6 +1318,7 @@ class Tour extends Bookable
     public function getBookingData()
 
     {
+        $meta = $this->meta ?? false;
 
         $booking_data = [
 
@@ -1299,7 +1374,6 @@ class Tour extends Bookable
 
         ];
 
-        $meta = $this->meta ?? false;
 
         $lang = app()->getLocale();
 

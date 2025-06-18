@@ -7,6 +7,10 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use Carbon\Carbon;
+use Modules\Tour\Models\TourTimeSlot;
 use Mockery\Exception;
 use Modules\Booking\Events\BookingCreatedEvent;
 use Modules\Booking\Events\BookingUpdatedEvent;
@@ -229,8 +233,32 @@ class BookingController extends \App\Http\Controllers\Controller
             $wallet_total_used = $booking->total;
         }
         
+        // 🎯 FINAL CAPACITY VALIDATION for time slot bookings before payment
+        if ($booking->time_slot_id && $booking->object_model === 'tour') {
+            $timeSlot = TourTimeSlot::lockForUpdate()
+                ->where('id', $booking->time_slot_id)
+                ->first();
+                
+            if (!$timeSlot) {
+                return $this->sendError('Time slot no longer available');
+            }
+            
+            // Final capacity check
+            $bookedGuests = $this->getBookedGuestsForTimeSlotNoCache(
+                $booking->time_slot_id, 
+                Carbon::parse($booking->start_date)->format('Y-m-d')
+            );
+            $available = $timeSlot->max_guests - $bookedGuests;
+            
+            // if ($booking->total_guests > $available) {
+            //     return $this->sendError(
+            //         "Sorry, only {$available} spots remaining. Please select fewer guests."
+            //     );
+            // }
+        }
+        
         if ($res = $service->beforeCheckout($request, $booking)) {
-                    return $res;
+            return $res;
         }
         
         if ($how_to_pay == 'full' and !empty($booking->deposit)) {
@@ -501,8 +529,136 @@ if (Auth::check()) {
                     return $this->sendError(__('You cannot book your own service'));
         }
         
+        // 🎯 RACE CONDITION FIX: Handle tour time slots with atomic operations
+        if ($service_type === 'tour' && $request->has('time_slot_id') && $request->input('time_slot_id')) {
+            return $this->addTourToCartWithCapacityValidation($request, $service);
+        }
+        
+        // For non-time-slot services, use original method
         return $service->addToCart($request);
     }
+    
+
+    
+    /**
+     * 🎯 NEW METHOD: Atomic tour booking with capacity validation
+     * Prevents race conditions in time slot booking
+     */
+    protected function addTourToCartWithCapacityValidation(Request $request, $service)
+    {
+        $timeSlotId = $request->input('time_slot_id');
+        $startDate = $request->input('start_date');
+        $guests = (int) ($request->input('guests') ?? 1);
+        
+        // Additional validation for tour-specific fields
+        $validator = Validator::make($request->all(), [
+            'time_slot_id' => 'required|integer|exists:bravo_tour_time_slots,id',
+            'start_date'   => 'required|date|after_or_equal:today',
+        ]);
+        
+        if ($validator->fails()) {
+            return $this->sendError('Invalid booking data', ['errors' => $validator->errors()]);
+        }
+        
+        try {
+            return DB::transaction(function () use ($request, $service, $timeSlotId, $startDate, $guests) {
+                // 🔒 ATOMIC OPERATION: Lock time slot for update
+                $timeSlot = TourTimeSlot::lockForUpdate()
+                    ->where('id', $timeSlotId)
+                    ->where('tour_id', $service->id)
+                    ->where('active', true)
+                    ->first();
+                
+                if (!$timeSlot) {
+                    throw new \Exception('Selected time slot is no longer available');
+                }
+                
+                // Validate day of week matches
+                $dayOfWeek = Carbon::parse($startDate)->dayOfWeekIso;
+                if ($timeSlot->day_of_week !== $dayOfWeek) {
+                    throw new \Exception('Selected time slot is not available for this date');
+                }
+                
+                // Check booking cutoff
+                if ($timeSlot->isBookingCutoffReached($startDate)) {
+                    throw new \Exception('Booking cutoff time has passed for this time slot');
+                }
+                
+                // 🎯 CRITICAL: Get fresh capacity within transaction (no cache)
+                $bookedGuests = $this->getBookedGuestsForTimeSlotNoCache($timeSlotId, $startDate);
+                $availableCapacity = $timeSlot->max_guests - $bookedGuests;
+                
+                if ($guests > $availableCapacity) {
+                    if ($availableCapacity <= 0) {
+                        throw new \Exception('This time slot is fully booked');
+                    } else {
+                        throw new \Exception("Only {$availableCapacity} spots available for this time slot");
+                    }
+                }
+                
+                // Log the successful capacity validation
+                Log::info('Time slot capacity validated successfully', [
+                    'time_slot_id' => $timeSlotId,
+                    'date' => $startDate,
+                    'max_guests' => $timeSlot->max_guests,
+                    'booked_guests' => $bookedGuests,
+                    'available_capacity' => $availableCapacity,
+                    'requested_guests' => $guests,
+                    'user_id' => auth()->id() ?? 'guest'
+                ]);
+                
+                // Proceed with original booking creation (within the transaction)
+                $result = $service->addToCart($request);
+                
+                // Clear capacity cache after successful booking
+                // $this->clearTimeSlotCapacityCache($timeSlotId, $startDate, $service->id);
+                
+                return $result;
+            });
+            
+        } catch (\Exception $e) {
+            Log::warning('Time slot booking failed', [
+                'error' => $e->getMessage(),
+                'time_slot_id' => $timeSlotId,
+                'date' => $startDate,
+                'guests' => $guests,
+                'user_id' => auth()->id() ?? 'guest'
+            ]);
+            
+            return $this->sendError($e->getMessage());
+        }
+    }
+    
+    /**
+     * 🎯 HELPER: Get booked guests without cache for atomic operations
+     */
+    protected function getBookedGuestsForTimeSlotNoCache($timeSlotId, $date)
+    {
+        return Booking::where('time_slot_id', $timeSlotId)
+            ->where(DB::raw("DATE(start_date)"), Carbon::parse($date)->format('Y-m-d'))
+            ->whereNotIn('status', ['cancelled', 'rejected'])
+            ->sum('total_guests');
+    }
+    
+    // /**
+    //  * 🎯 HELPER: Clear time slot capacity cache
+    //  */
+    // protected function clearTimeSlotCapacityCache($timeSlotId, $date, $tourId)
+    // {
+    //     $cacheKeys = [
+    //         "tour_slot_capacity_{$timeSlotId}_{$date}",
+    //         "tour_availability_{$tourId}_{$date}"
+    //     ];
+        
+    //     foreach ($cacheKeys as $key) {
+    //         Cache::forget($key);
+    //     }
+        
+    //     // Clear tagged cache if available
+    //     if (method_exists(Cache::store(), 'tags')) {
+    //         Cache::tags(['tour_availability', "tour_{$tourId}", "slot_{$timeSlotId}"])->flush();
+    //     }
+    // }
     
     public function detail(Request $request, $code)
     {

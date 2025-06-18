@@ -1,7 +1,6 @@
 <div class="time-slots-section">
     <div class="form-group">
         <label>
-        <input type="hidden" name="enable_time_slots" value="0">
         <input type="checkbox" name="enable_time_slots" value="1" @if($row->meta && $row->meta->enable_time_slots) checked @endif>
             {{__('Enable specific time slots for this tour')}}
         </label>

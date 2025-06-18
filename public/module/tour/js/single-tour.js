@@ -88,6 +88,15 @@
 
             enquiry_note: "",
 
+            // 🔥 Enhanced Time slots properties
+            enable_time_slots: false,
+            time_slots_debug_mode: false,
+            time_slots_last_update: null,
+            time_slots_retry_count: 0,
+            time_slots_max_retries: 3,
+            time_slots_force_update: false,
+            start_date_formatted: "",
+
         },
 
         watch: {
@@ -108,6 +117,16 @@
 
                 this.step = 1;
 
+                // 🔥 ENHANCED: Reload time slots when guest count changes
+                if (this.enable_time_slots && this.start_date) {
+                    // console.log('📊 Guest count changed, reloading time slots');
+                    var me = this;
+                    me.time_slots_retry_count = 0; // Reset retry count
+                    setTimeout(function() {
+                        me.loadTimeSlotsWithRetry(me.start_date);
+                    }, 300);
+                }
+
             },
 
             person_types: {
@@ -115,6 +134,16 @@
                 handler: function f() {
 
                     this.step = 1;
+
+                    // 🔥 ENHANCED: Reload time slots when person types change
+                    if (this.enable_time_slots && this.start_date) {
+                        // console.log('👥 Person types changed, reloading time slots');
+                        var me = this;
+                        me.time_slots_retry_count = 0; // Reset retry count
+                        setTimeout(function() {
+                            me.loadTimeSlotsWithRetry(me.start_date);
+                        }, 300);
+                    }
 
                 },
 
@@ -146,7 +175,7 @@
 
                                     ...pt,
 
-                                    display_price: window.bravo_format_money ? window.bravo_format_money(pt.price) : '�' + pt.price
+                                    display_price: window.bravo_format_money ? window.bravo_format_money(pt.price) : '�' + pt.price
 
                                 };
 
@@ -164,6 +193,15 @@
 
                     }
 
+                }
+
+                // 🔥 ENHANCED: Load time slots when date changes with better error handling
+                if (me.enable_time_slots && me.start_date) {
+                    // console.log('📅 Date changed, loading time slots for:', me.start_date);
+                    me.time_slots_retry_count = 0; // Reset retry count
+                    setTimeout(function() {
+                        me.loadTimeSlotsWithRetry(me.start_date);
+                    }, 100);
                 }
 
             },
@@ -208,7 +246,15 @@
 
                 var me = this;
 
-                console.log(me);
+                // Check if selected guests exceed time slot capacity
+                if (me.enable_time_slots && me.selected_time_slot) {
+                    var total_guests = this.getGuestCount();
+                    if (total_guests > me.selected_time_slot.remaining_capacity) {
+                        me.clearTimeSlot();
+                        toastr.error('Selected number of guests exceeds available capacity. Time slot selection has been cleared.');
+                        return 0;
+                    }
+                }
 
                 if (me.start_date !== "") {
 
@@ -229,15 +275,11 @@
                         }
                     }
                     
-                    console.log("Selected event:", selectedEvent);
-                    
                     // Use person types from the selected event if available
                     if (selectedEvent && selectedEvent.person_types != null && selectedEvent.person_types.length > 0) {
                         for (var ix in selectedEvent.person_types) {
                             var person_type = selectedEvent.person_types[ix];
-                            // Get the price from the person type in the selected event
                             var personPrice = parseFloat(person_type.price);
-                            // Get the number from me.person_types which has the updated guest counts
                             var personNumber = 0;
                             for (var jx in me.person_types) {
                                 if (me.person_types[jx].name === person_type.name) {
@@ -245,12 +287,10 @@
                                     break;
                                 }
                             }
-                            console.log("Person type:", person_type.name, "Price from event:", personPrice, "Number:", personNumber);
                             total += personPrice * personNumber;
                             total_guests += personNumber;
                         }
                     } else if (me.person_types != null && me.person_types.length > 0) {
-                        // Fallback to using me.person_types if selectedEvent not found
                         for (var ix in me.person_types) {
                             var person_type = me.person_types[ix];
                             var personPrice = parseFloat(person_type.price);
@@ -272,7 +312,7 @@
                             // Only add price if package is selected (enable property is true or 1)
                             if (packages.enable == 1 || packages.enable === true) {
                                 total += parseFloat(packages.price);
-                                console.log("Package selected:", packages.name, "Price:", packages.price);
+                                // console.log("Package selected:", packages.name, "Price:", packages.price);
                             }
                         }
                     }
@@ -716,22 +756,47 @@
 
             handleTotalPrice: function () {},
 
+            // 🔥 ENHANCED: Select time slot with better validation and feedback
             selectTimeSlot(slot) {
-                if (!slot) return;
+                if (!slot) {
+                    console.warn('⚠️ Invalid slot provided to selectTimeSlot');
+                    return;
+                }
                 
-                // Use Vue.set to ensure reactivity
-                Vue.set(this, 'selected_time_slot', slot);
-                Vue.set(this, 'time_slot_id', slot.id);
-                Vue.set(this, 'start_time', slot.start_time);
+                // Validate slot availability for current guest count
+                const guests = this.getGuestCount();
+                if (slot.remaining_capacity < guests) {
+                    this.showTimeSlotError('This time slot only has ' + slot.remaining_capacity + ' spots available, but you need ' + guests + ' spots.');
+                    return;
+                }
+                
+                // Clear any previous slot
+                this.clearTimeSlot();
+                
+                // Direct assignment since properties are declared upfront
+                this.selected_time_slot = slot;
+                this.time_slot_id = slot.id;
+                this.start_time = slot.start_time;
+                
+                // console.log('✅ Time slot selected:', {
+                //     id: slot.id,
+                //     time: slot.formatted_time,
+                //     remaining_capacity: slot.remaining_capacity
+                // });
                 
                 // Force step update to trigger price recalculation
                 this.step = 1;
+                
+                // Show success feedback
+                this.showTimeSlotSuccess('Time slot ' + slot.formatted_time + ' selected successfully!');
             },
             
+            // 🔥 ENHANCED: Clear time slot with logging
             clearTimeSlot() {
-                Vue.set(this, 'selected_time_slot', null);
-                Vue.set(this, 'time_slot_id', null);
-                Vue.set(this, 'start_time', null);
+                // console.log('🗽 Clearing time slot selection');
+                this.selected_time_slot = null;
+                this.time_slot_id = null;
+                this.start_time = null;
                 this.step = 1;
             },
             
@@ -853,7 +918,7 @@
                         this.person_types.forEach(type => {
                             const minRequired = parseInt(type.min) || 0;
                             if (minRequired > 0) {
-                                Vue.set(type, 'number', minRequired);
+                                type.number = minRequired;
                                 totalGuests += minRequired;
                             }
                         });
@@ -866,27 +931,387 @@
                     
                     // Ensure guests field has a default value if it's 0 or undefined
                     if (!this.guests || this.guests === 0) {
-                        Vue.set(this, 'guests', 1);
+                        this.guests = 1;
                         totalGuests = 1;
                     }
                 }
                 
                 return totalGuests;
             },
+
+            // 🔥 ENHANCED: Main time slots loading method with retry mechanism
+            loadTimeSlotsWithRetry: function(date) {
+                var me = this;
+                
+                // Increment retry count
+                me.time_slots_retry_count++;
+                
+                if (me.time_slots_retry_count > me.time_slots_max_retries) {
+                    // console.error('❌ Max retries reached for time slots loading');
+                    me.showTimeSlotError('Unable to load time slots after multiple attempts. Please refresh the page.');
+                    return;
+                }
+                
+                console.log('🔄 Loading time slots (attempt ' + me.time_slots_retry_count + '/' + me.time_slots_max_retries + ')');
+                me.loadTimeSlots(date);
+            },
+            
+            // 🔥 ENHANCED: Core time slots loading method
+            loadTimeSlots: function(date) {
+                if (!this.enable_time_slots) {
+                    console.log('⚠️ Time slots are disabled for this tour');
+                    return;
+                }
+                
+                if (!date) {
+                    console.log('⚠️ No date provided for time slots loading');
+                    return;
+                }
+                
+                console.log('📡 Loading time slots for:', date, 'Tour ID:', this.id);
+                
+                var me = this;
+                
+                // Set loading state
+                me.loading_time_slots = true;
+                me.time_slots_last_update = new Date().toISOString();
+                
+                // Clear existing slots
+                me.available_time_slots = [];
+                me.sold_out_slots = [];
+                
+                const guests = me.getGuestCount();
+                
+                // Try multiple API URLs as fallback
+                const apiUrls = [
+                    (typeof bravo_booking_i18n !== 'undefined' && bravo_booking_i18n.load_time_slots_url) || null,
+                    '/api/tour/time-slots/available',
+                    '/api/tour/time-slots/fallback'
+                ].filter(url => url);
+                
+                // console.log('🌐 Trying API URLs:', apiUrls);
+                
+                let currentUrlIndex = 0;
+                
+                function tryNextUrl() {
+                    if (currentUrlIndex >= apiUrls.length) {
+                        // console.error('❌ All API URLs failed');
+                        me.loading_time_slots = false;
+                        me.showTimeSlotError('Unable to load time slots. Please try again or contact support.');
+                        return;
+                    }
+                    
+                    const apiUrl = apiUrls[currentUrlIndex];
+                    // console.log('🔗 Trying URL ' + (currentUrlIndex + 1) + ':', apiUrl);
+                    
+                    $.ajax({
+                        url: apiUrl,
+                        method: 'GET',
+                        dataType: 'json',
+                        timeout: 10000, // 10 second timeout
+                        data: {
+                            tour_id: me.id,
+                            date: date,
+                            guests: guests,
+                            _t: Date.now(),
+                            debug: me.time_slots_debug_mode ? 1 : 0
+                        },
+                        success: function(response) {
+                            // console.log('✅ Time slots response from URL ' + (currentUrlIndex + 1) + ':', response);
+                            
+                            me.loading_time_slots = false;
+                            me.time_slots_retry_count = 0; // Reset retry count on success
+                            
+                            if (response && response.success && response.data && response.data.time_slots) {
+                                me.processTimeSlotsResponse(response.data.time_slots, guests);
+                            } else {
+                                // console.log('⚠️ Invalid response format:', response);
+                                me.showTimeSlotWarning('No time slots available for the selected date.');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            // console.error('❌ Time slots error for URL ' + (currentUrlIndex + 1) + ':', {
+                            //     status: xhr.status,
+                            //     statusText: xhr.statusText,
+                            //     error: error,
+                            //     responseText: xhr.responseText
+                            // });
+                            
+                            currentUrlIndex++;
+                            if (currentUrlIndex < apiUrls.length) {
+                                // console.log('🔄 Trying next URL...');
+                                setTimeout(tryNextUrl, 1000); // Wait 1 second before trying next URL
+                            } else {
+                                me.loading_time_slots = false;
+                                
+                                // Different error messages based on status
+                                if (xhr.status === 404) {
+                                    me.showTimeSlotError('Time slots feature not available. Please contact support.');
+                                } else if (xhr.status === 500) {
+                                    me.showTimeSlotError('Server error loading time slots. Please try again later.');
+                                } else if (status === 'timeout') {
+                                    me.showTimeSlotError('Request timed out. Please check your connection and try again.');
+                                } else {
+                                    me.showTimeSlotError('Failed to load time slots. Please try again or contact support.');
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                // Start trying URLs
+                tryNextUrl();
+            },
+            
+            // 🔥 NEW: Process time slots response with GUARANTEED Vue reactivity
+           // 🛠️ ENHANCED processTimeSlotsResponse method - Replace the existing success call:
+processTimeSlotsResponse: function(slots, requestedGuests) {
+    var me = this;
+    
+    // console.log('🛠️ Processing', slots.length, 'time slots for', requestedGuests, 'guests');
+    
+    // Filter available slots
+    const availableSlots = slots.filter(function(slot) {
+        return !slot.is_sold_out && slot.remaining_capacity > 0;
+    });
+    
+    // Filter sold out slots
+    const soldOutSlots = slots.filter(function(slot) {
+        return slot.is_sold_out || slot.remaining_capacity === 0;
+    });
+    
+    // Filter slots that can accommodate requested guests
+    const bookableSlots = availableSlots.filter(function(slot) {
+        return slot.remaining_capacity >= requestedGuests;
+    });
+    
+    // ✅ CRITICAL: Update Vue data with proper reactivity
+    this.$set(this, 'available_time_slots', availableSlots);
+    this.$set(this, 'sold_out_slots', soldOutSlots);
+    
+    // console.log('📊 Time slots processed:', {
+    //     total: slots.length,
+    //     available: availableSlots.length,
+    //     soldOut: soldOutSlots.length,
+    //     bookableForGuests: bookableSlots.length,
+    //     requestedGuests: requestedGuests
+    // });
+    
+    // 🔥 CRITICAL: Force Vue update with multiple strategies
+    this.$forceUpdate();
+    
+    // Force re-render with nextTick
+    this.$nextTick(function() {
+        // console.log('🔄 Vue nextTick completed - slots should be visible now');
+        // console.log('🔍 Current available_time_slots:', me.available_time_slots.length);
+        // console.log('🔍 Current sold_out_slots:', me.sold_out_slots.length);
+        
+        // ✅ ENHANCED: Show appropriate success message with UI update
+        if (availableSlots.length === 0) {
+            me.showTimeSlotWarning('No time slots available for the selected date.');
+        } else if (bookableSlots.length === 0) {
+            me.showTimeSlotWarning('No time slots can accommodate ' + requestedGuests + ' guests. Available slots have limited capacity.');
+        } else {
+            // 🎯 THIS IS WHERE THE SUCCESS MESSAGE SHOULD UPDATE THE UI
+            me.showTimeSlotSuccess('Found ' + bookableSlots.length + ' available time slot' + (bookableSlots.length === 1 ? '' : 's') + ' for your group!');
+            
+            // Additional UI enhancement for successful loading
+            setTimeout(function() {
+                // Highlight the available slots
+                const slotElements = document.querySelectorAll('.time-slot-available, .time-slot:not(.sold-out)');
+                slotElements.forEach(function(element, index) {
+                    setTimeout(function() {
+                        element.classList.add('animate-in');
+                    }, index * 100); // Stagger animation
+                });
+            }, 300);
+        }
+        
+        // Auto-select if only one bookable slot
+        if (bookableSlots.length === 1) {
+            // console.log('🎯 Auto-selecting the only available slot');
+            setTimeout(function() {
+                me.selectTimeSlot(bookableSlots[0]);
+            }, 500);
+        }
+    });
+},
+
+
+            // 🔥 Add helper methods for time slots
+            isSlotBookableForCurrentGuests: function(slot) {
+                if (!slot) return false;
+                const guests = this.getGuestCount();
+                return !slot.is_sold_out && slot.remaining_capacity >= guests;
+            },
+
+            handleTimeSlotClick: function(slot) {
+                if (this.isSlotBookableForCurrentGuests(slot)) {
+                    this.selectTimeSlot(slot);
+                }
+            },
+
+            getSlotTooltip: function(slot) {
+                const guests = this.getGuestCount();
+                if (slot.is_sold_out) return 'Fully booked';
+                if (slot.remaining_capacity < guests) return 'Only ' + slot.remaining_capacity + ' spots available';
+                return slot.remaining_capacity + ' spots available';
+            },
+
+            getSlotAriaLabel: function(slot) {
+                return 'Time slot ' + this.formatTime(slot.start_time) + ', ' + slot.remaining_capacity + ' spots available';
+            },
+            
+            // 🔥 NEW: User feedback methods
+            showTimeSlotSuccess: function(message) {
+    // console.log('✅ Success:', message);
+    
+    // 1. Update Vue reactive message system with proper structure
+    this.message = {
+        content: message,
+        type: true,  // true = success type
+        status: true
+    };
+    
+    // 2. Force Vue reactivity update
+    this.$forceUpdate();
+    
+    // 3. Ensure DOM update with nextTick
+    var me = this;
+    this.$nextTick(function() {
+        // console.log('🔄 Vue nextTick completed - success message should be visible');
+        
+        // 4. Additional UI feedback mechanisms
+        
+        // Show toastr notification if available
+        if (typeof toastr !== 'undefined') {
+            toastr.success(message, 'Time Slot Success', {
+                timeOut: 4000,
+                closeButton: true,
+                positionClass: 'toast-top-center'
+            });
+        }
+        
+        // Add visual feedback to time slots container
+        const timeSlotsContainer = document.querySelector('.time-slots-container, .available-time-slots, [data-time-slots]');
+        if (timeSlotsContainer) {
+            timeSlotsContainer.classList.add('success-highlight');
+            
+            // Remove highlight after animation
+            setTimeout(function() {
+                timeSlotsContainer.classList.remove('success-highlight');
+            }, 2000);
+        }
+        
+        // Trigger custom event for other components
+        if (typeof window.CustomEvent !== 'undefined') {
+            const event = new CustomEvent('timeSlotSuccess', {
+                detail: { message: message }
+            });
+            document.dispatchEvent(event);
+        }
+        
+        // // Update page title temporarily for additional feedback
+        // const originalTitle = document.title;
+        // document.title = '✅ ' + message;
+        // setTimeout(function() {
+        //     document.title = originalTitle;
+        // }, 3000);
+    });
+    
+    // 5. Auto-clear message after delay
+    setTimeout(function() {
+        if (me.message.content === message) {
+            me.message = {
+                content: '',
+                type: false,
+                status: false
+            };
+            me.$forceUpdate();
+        }
+    }, 5000);
+},
+            
+            showTimeSlotError: function(message) {
+                // console.error('❌ Error:', message);
+                if (typeof toastr !== 'undefined') {
+                    toastr.error(message);
+                } else {
+                    this.showMessage(message, 'error');
+                }
+            },
+            
+            showTimeSlotWarning: function(message) {
+                // console.warn('⚠️ Warning:', message);
+                if (typeof toastr !== 'undefined') {
+                    toastr.warning(message);
+                } else {
+                    this.showMessage(message, 'warning');
+                }
+            },
+            
+            showMessage: function(message, type) {
+                // Fallback message display if toastr not available
+                this.message.content = message;
+                this.message.type = type === 'success';
+                
+                // Auto-clear message after 5 seconds
+                var me = this;
+                setTimeout(function() {
+                    me.message.content = '';
+                }, 5000);
+            },
+            
+            // 🔥 NEW: Debug helpers
+            enableTimeSlotDebug: function() {
+                this.time_slots_debug_mode = true;
+                // console.log('🔍 Time slots debug mode enabled');
+            },
+            
+            disableTimeSlotDebug: function() {
+                this.time_slots_debug_mode = false;
+                // console.log('🔍 Time slots debug mode disabled');
+            },
+            
+            getTimeSlotDebugInfo: function() {
+                return {
+                    enable_time_slots: this.enable_time_slots,
+                    available_time_slots: this.available_time_slots,
+                    sold_out_slots: this.sold_out_slots,
+                    selected_time_slot: this.selected_time_slot,
+                    loading_time_slots: this.loading_time_slots,
+                    time_slots_last_update: this.time_slots_last_update,
+                    time_slots_retry_count: this.time_slots_retry_count,
+                    start_date: this.start_date,
+                    guests: this.getGuestCount(),
+                    tour_id: this.id
+                };
+            },
+            
+            // 🔥 NEW: Force refresh time slots
+            refreshTimeSlots: function() {
+                if (this.start_date && this.enable_time_slots) {
+                    // console.log('🔄 Force refreshing time slots...');
+                    this.time_slots_retry_count = 0;
+                    this.loadTimeSlotsWithRetry(this.start_date);
+                } else {
+                    // console.warn('⚠️ Cannot refresh: no date selected or time slots disabled');
+                }
+            },
             validate() {
-
                 if (!this.start_date) {
-
                     this.message.status = false;
-
                     this.message.content = bravo_booking_i18n.no_date_select;
-
                     return false;
+                }
 
+                if (this.enable_time_slots && !this.selected_time_slot) {
+                    this.message.status = false;
+                    this.message.content = bravo_booking_i18n.no_slot_select;
+                    return false;
                 }
 
                 return true;
-
             },
 
             addPersonType(type) {
@@ -1367,4 +1792,105 @@
 
     });
 
+    // 🔥 GLOBAL DEBUG FUNCTIONS - Available in browser console
+    window.tourTimeSlotsDebug = {
+        getVueApp: function() {
+            const element = document.querySelector('#bravo_tour_book_app');
+            return element && element.__vue__ ? element.__vue__ : null;
+        },
+        
+        getDebugInfo: function() {
+            const app = this.getVueApp();
+            return app ? app.getTimeSlotDebugInfo() : null;
+        },
+        
+        refreshSlots: function() {
+            const app = this.getVueApp();
+            if (app) {
+                app.refreshTimeSlots();
+            } else {
+                console.error('❌ Vue app not found');
+            }
+        },
+        
+        enableDebug: function() {
+            const app = this.getVueApp();
+            if (app) {
+                app.enableTimeSlotDebug();
+            } else {
+                console.error('❌ Vue app not found');
+            }
+        },
+        
+        disableDebug: function() {
+            const app = this.getVueApp();
+            if (app) {
+                app.disableTimeSlotDebug();
+            } else {
+                console.error('❌ Vue app not found');
+            }
+        },
+        
+        testAPI: function(tourId, date) {
+            const app = this.getVueApp();
+            const actualTourId = tourId || (app ? app.id : 128);
+            const actualDate = date || (app ? app.start_date : '2024-12-15');
+            
+            // console.log('🧪 Testing API with:', { tourId: actualTourId, date: actualDate });
+            
+            const apiUrl = '/api/tour/time-slots/available?tour_id=' + actualTourId + '&date=' + actualDate + '&guests=2&_t=' + Date.now();
+            
+            fetch(apiUrl)
+                .then(response => {
+                    // console.log('📡 API Response Status:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    // console.log('✅ API Response Data:', data);
+                })
+                .catch(error => {
+                    console.error('❌ API Error:', error);
+                });
+        },
+        
+        setDate: function(date) {
+            const app = this.getVueApp();
+            if (app) {
+                app.start_date = date;
+                if (app.enable_time_slots) {
+                    app.refreshTimeSlots();
+                }
+                // console.log('📅 Date set to:', date);
+            } else {
+                console.error('❌ Vue app not found');
+            }
+        },
+        
+        clearSlots: function() {
+            const app = this.getVueApp();
+            if (app) {
+                app.available_time_slots = [];
+                app.sold_out_slots = [];
+                app.clearTimeSlot();
+                // console.log('🧹 Time slots cleared');
+            } else {
+                // console.error('❌ Vue app not found');
+            }
+        },
+        
+        help: function() {
+            console.log('📚 Available Commands:');
+            console.log('- tourTimeSlotsDebug.getDebugInfo() - Get current debug info');
+            console.log('- tourTimeSlotsDebug.refreshSlots() - Refresh time slots');
+            console.log('- tourTimeSlotsDebug.testAPI(tourId, date) - Test API call');
+            console.log('- tourTimeSlotsDebug.setDate("2024-12-15") - Set date and refresh');
+            console.log('- tourTimeSlotsDebug.clearSlots() - Clear all slots');
+            console.log('- tourTimeSlotsDebug.enableDebug() - Enable debug mode');
+            console.log('- tourTimeSlotsDebug.disableDebug() - Disable debug mode');
+        }
+    };
+    
+    // Show help on load
+    console.log('🚀 Tour Time Slots Enhanced! Type tourTimeSlotsDebug.help() for commands');
+    
 })(jQuery);

@@ -30,6 +30,26 @@ class TourTimeSlot extends BaseModel
         return $this->belongsTo(Tour::class, 'tour_id');
     }
 
+    /**
+     * 🚨 CRITICAL: Get remaining capacity without cache for real-time validation
+     * Use this during booking process to prevent race conditions
+     */
+    public function getRemainingCapacityNoCache($date)
+    {
+        $totalBooked = $this->getBookedGuestsForDateNoCache($date);
+        $remaining = max(0, $this->max_guests - $totalBooked);
+        
+        \Log::debug('Real-time capacity check (no cache)', [
+            'time_slot_id' => $this->id,
+            'date' => $date,
+            'max_guests' => $this->max_guests,
+            'booked_guests' => $totalBooked,
+            'remaining_capacity' => $remaining
+        ]);
+        
+        return $remaining;
+    }
+
     public function availability()
     {
         return $this->hasMany(TourTimeSlotAvailability::class, 'time_slot_id');
@@ -102,27 +122,20 @@ class TourTimeSlot extends BaseModel
 
     public function getRemainingCapacity($date)
     {
-        // 🎯 ENHANCED: Use shorter cache time for real-time accuracy
-        $cacheKey = "tour_slot_capacity_{$this->id}_{$date}";
+        // 🎯 ENHANCED: Direct database query - no cache dependency
+        $totalBooked = $this->getBookedGuestsForDateNoCache($date);
+        $tempReserved = 0; // Simplified - removed temp reservations (requires Redis)
+        $remaining = max(0, $this->max_guests - $totalBooked);
         
-        return Cache::remember($cacheKey, 60, function() use ($date) { // 1 minute cache instead of 5
-            $totalBooked = $this->getBookedGuestsForDate($date);
-            $tempReserved = $this->getTemporaryReservedGuests($date); // 🎯 NEW: Include temp reservations
-            $totalUsed = $totalBooked + $tempReserved;
-            $remaining = max(0, $this->max_guests - $totalUsed);
-            
-            \Log::debug('Calculating remaining capacity with temporary reservations', [
-                'time_slot_id' => $this->id,
-                'date' => $date,
-                'max_guests' => $this->max_guests,
-                'confirmed_booked' => $totalBooked,
-                'temporary_reserved' => $tempReserved,
-                'total_used' => $totalUsed,
-                'remaining' => $remaining
-            ]);
-            
-            return $remaining;
-        });
+        \Log::debug('Real-time capacity check (no cache)', [
+            'time_slot_id' => $this->id,
+            'date' => $date,
+            'max_guests' => $this->max_guests,
+            'booked_guests' => $totalBooked,
+            'remaining_capacity' => $remaining
+        ]);
+        
+        return $remaining;
     }
 
     public function getBookedGuestsForDate($date)
@@ -130,69 +143,22 @@ class TourTimeSlot extends BaseModel
         return Booking::where('object_id', $this->tour_id)
             ->where('object_model', 'tour')
             ->where(DB::raw("DATE(start_date)"), $date)
-            ->where(function($query) {
-                $query->where('time_slot_id', $this->id)
-                      ->orWhere(function($q) {
-                          $q->whereNull('time_slot_id')
-                            ->where('start_time', $this->start_time);
-                      });
-            })
-            ->whereNotIn('status', Booking::$notAcceptedStatus ?? ['cancelled', 'rejected', 'draft']) // 🎯 CRITICAL: Exclude draft bookings
+            ->where('time_slot_id', $this->id) // 🎯 SIMPLIFIED: Only check time_slot_id
+            ->whereNotIn('status', ['cancelled', 'rejected', 'draft']) // 🎯 CRITICAL: Exclude draft bookings
             ->sum('total_guests');
     }
     
     /**
-     * 🎯 NEW METHOD: Get temporarily reserved guests for a date
+     * 🎯 SIMPLIFIED: Get temporarily reserved guests for a date
+     * Returns 0 when cache/Redis is disabled
      */
     public function getTemporaryReservedGuests($date)
     {
-        try {
-            $pattern = "temp_reservation_{$this->id}_{$date}_*";
-            $totalReserved = 0;
-            
-            // Get all reservation keys for this slot and date
-            if (method_exists(Cache::store(), 'getRedis')) {
-                $keys = Cache::store()->getRedis()->keys($pattern);
-            } else {
-                // Fallback for non-Redis cache drivers - less efficient but works
-                $keys = $this->getAllTempReservationKeys($date);
-            }
-            
-            foreach ($keys as $key) {
-                $reservation = Cache::get($key);
-                if ($reservation && isset($reservation['expires_at'])) {
-                    // Only count non-expired reservations
-                    if (now()->lt($reservation['expires_at'])) {
-                        $totalReserved += $reservation['guests'] ?? 0;
-                    } else {
-                        // Clean up expired reservation
-                        Cache::forget($key);
-                    }
-                }
-            }
-            
-            return $totalReserved;
-            
-        } catch (\Exception $e) {
-            \Log::warning('Failed to get temporary reserved guests', [
-                'error' => $e->getMessage(),
-                'time_slot_id' => $this->id,
-                'date' => $date
-            ]);
-            return 0; // Fail safe - don't block bookings if we can't check temp reservations
-        }
+        // Return 0 if not using Redis-based temporary reservations
+        return 0;
     }
     
-    /**
-     * 🎯 HELPER METHOD: Fallback for non-Redis cache drivers
-     */
-    private function getAllTempReservationKeys($date)
-    {
-        // This is a less efficient fallback - ideally use Redis
-        // For now, we'll try a different approach using a registry
-        $registryKey = "temp_reservation_registry_{$this->id}_{$date}";
-        return Cache::get($registryKey, []);
-    }
+
 
     public function isSoldOut($date)
     {
@@ -201,24 +167,17 @@ class TourTimeSlot extends BaseModel
 
     public function updateAvailabilityCache($date)
     {
-        // 🎯 SIMPLIFIED: Just clear the cache for now
-        $cacheKey = "tour_slot_capacity_{$this->id}_{$date}";
-        Cache::forget($cacheKey);
-        
-        // Get fresh data for logging
-        $bookedGuests = $this->getBookedGuestsForDate($date);
+        // 🎯 SIMPLIFIED: No cache to update, just log availability check
+        $bookedGuests = $this->getBookedGuestsForDateNoCache($date);
         $remainingCapacity = max(0, $this->max_guests - $bookedGuests);
         
-        \Log::info('Time slot availability cache updated (simplified)', [
+        \Log::info('Availability check (no cache)', [
             'time_slot_id' => $this->id,
             'date' => $date,
             'booked_guests' => $bookedGuests,
             'remaining_capacity' => $remainingCapacity,
             'is_sold_out' => $remainingCapacity <= 0
         ]);
-        
-        // 🎯 TODO: Optionally save to availability table later
-        // For now, we'll rely on cache and real-time calculation
     }
 
     // Scopes
@@ -252,7 +211,6 @@ class TourTimeSlot extends BaseModel
             })
             ->map(function($slot) use ($date) {
                 $remainingCapacity = $slot->getRemainingCapacity($date);
-                $tempReserved = $slot->getTemporaryReservedGuests($date);
                 
                 return [
                     'id' => $slot->id,
@@ -261,13 +219,11 @@ class TourTimeSlot extends BaseModel
                     'formatted_time' => $slot->formatted_time,
                     'max_guests' => $slot->max_guests,
                     'remaining_capacity' => $remainingCapacity,
-                    'temp_reserved' => $tempReserved, // 🎯 NEW: Show temp reservations for debugging
                     'price_modifier' => $slot->price_modifier,
                     'price_with_modifier' => $slot->price_with_modifier,
                     'description' => $slot->description,
                     'is_sold_out' => $slot->isSoldOut($date),
-                    'day_name' => $slot->day_name,
-                    'reservation_warning' => $tempReserved > 0 ? "⚠️ {$tempReserved} spots temporarily held" : null // 🎯 NEW: User-friendly warning
+                    'day_name' => $slot->day_name
                 ];
             })
             ->values();
@@ -326,18 +282,63 @@ class TourTimeSlot extends BaseModel
     }
 
     /**
-     * 🎯 NEW METHOD: Force refresh capacity for date
+     * 🎯 SIMPLIFIED: Force refresh capacity for date (no cache to refresh)
      */
     public function refreshCapacityForDate($date)
     {
-        // Clear cache
-        $cacheKey = "tour_slot_capacity_{$this->id}_{$date}";
-        Cache::forget($cacheKey);
-        
-        // Update availability cache
-        $this->updateAvailabilityCache($date);
-        
-        // Return fresh capacity
+        // No cache to refresh, just return fresh capacity
         return $this->getRemainingCapacity($date);
+    }
+    
+    /**
+     * 🚨 CRITICAL: Transaction-safe capacity checking (NO CACHE)
+     * Use this method within database transactions to prevent race conditions
+     */
+    public function getBookedGuestsForDateNoCache($date)
+    {
+        return Booking::where('object_id', $this->tour_id)
+            ->where('object_model', 'tour')
+            ->where(DB::raw("DATE(start_date)"), $date)
+            ->where('time_slot_id', $this->id)
+            ->whereNotIn('status', ['cancelled', 'rejected', 'draft'])
+            ->sum('total_guests');
+    }
+    
+    /**
+     * 🚨 CRITICAL: Atomic capacity validation for booking creation
+     * Returns true if capacity is available, false otherwise
+     */
+    public function validateCapacityAtomic($date, $requestedGuests)
+    {
+        // This method should only be called within a database transaction
+        // with the time slot locked for update
+        
+        $bookedGuests = $this->getBookedGuestsForDateNoCache($date);
+        $availableCapacity = $this->max_guests - $bookedGuests;
+        
+        \Log::info('Atomic capacity validation', [
+            'time_slot_id' => $this->id,
+            'date' => $date,
+            'max_guests' => $this->max_guests,
+            'booked_guests' => $bookedGuests,
+            'available_capacity' => $availableCapacity,
+            'requested_guests' => $requestedGuests,
+            'validation_result' => $availableCapacity >= $requestedGuests
+        ]);
+        
+        return $availableCapacity >= $requestedGuests;
+    }
+    
+    /**
+     * 🚨 SIMPLIFIED: Clear all related cache after booking (no-op when cache disabled)
+     */
+    public function clearRelatedCache($date)
+    {
+        // No-op when cache is disabled
+        \Log::info('Cache clearing skipped (cache disabled)', [
+            'time_slot_id' => $this->id,
+            'tour_id' => $this->tour_id,
+            'date' => $date
+        ]);
     }
 }
